@@ -1,7 +1,5 @@
 # 🏛️ Incidencias Cantillana - Sistema de Gestión Municipal
 
-![Banner](assets/readme/banner.png)
-
 ## 📋 Descripción General
 
 **Incidencias Cantillana** es una plataforma integral diseñada para facilitar la comunicación entre los ciudadanos y el Ayuntamiento de Cantillana. Esta aplicación permite a los usuarios reportar desperfectos en la vía pública (lumínicos, limpieza, pavimentación, etc.) de manera rápida, geolocalizada y documentada con imágenes.
