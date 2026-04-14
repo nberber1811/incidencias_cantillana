@@ -11,18 +11,18 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authStateProvider = StateProvider<AppUser?>((ref) => null);
 
 class AuthRepository {
-  final String baseUrl = 'https://alumno23.fpcantillana.org/api';
+  final String baseUrl = 'https://alumno23.fpcantillana.org/api/auth';
 
   AuthRepository();
 
   Future<AppUser?> signInWithEmailAndPassword(String email, String password) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/login.php'),
+      Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({'email': email, 'password': password}),
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(response.body);
       return AppUser.fromJson(data['user']);
     } else {
@@ -30,14 +30,19 @@ class AuthRepository {
     }
   }
 
-  Future<AppUser?> createUserWithEmailAndPassword(String email, String password, {String? nombre}) async {
+  Future<AppUser?> createUserWithEmailAndPassword(String email, String password, {String? nombre, String? telefono}) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/register.php'),
+      Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email, 'password': password, 'nombre': nombre}),
+      body: json.encode({
+        'email': email, 
+        'password': password, 
+        'nombre': nombre,
+        'telefono': telefono,
+      }),
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(response.body);
       return AppUser.fromJson(data['user']);
     } else {

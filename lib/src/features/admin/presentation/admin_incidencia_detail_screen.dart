@@ -2,7 +2,9 @@ import 'package:ayuntamiento_incidencias/src/features/incidencias/data/incidenci
 import 'package:ayuntamiento_incidencias/src/features/incidencias/domain/incidencia.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/widgets/html_map_widget.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:intl/intl.dart';
 
 class AdminIncidenciaDetailScreen extends ConsumerStatefulWidget {
@@ -17,6 +19,8 @@ class AdminIncidenciaDetailScreen extends ConsumerStatefulWidget {
 class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDetailScreen> {
   @override
   Widget build(BuildContext context) {
+    const String baseUploadUrl = 'https://alumno23.fpcantillana.org/uploads/';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Detalles de Incidencia')),
       body: SingleChildScrollView(
@@ -24,11 +28,11 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.incidencia.imageUrl != null)
+            if (widget.incidencia.image != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: Image.network(
-                  widget.incidencia.imageUrl!,
+                  '$baseUploadUrl${widget.incidencia.image}',
                   width: double.infinity,
                   height: 250,
                   fit: BoxFit.cover,
@@ -36,9 +40,9 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
               ),
             const SizedBox(height: 24),
             
-            if (widget.incidencia.latitude != null && widget.incidencia.longitude != null)
+            if (widget.incidencia.latitud != null && widget.incidencia.longitud != null)
               Container(
-                height: 150,
+                height: 200,
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -47,20 +51,10 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
-                  child: GoogleMap(
-                    initialCameraPosition: CameraPosition(
-                      target: LatLng(widget.incidencia.latitude!, widget.incidencia.longitude!),
-                      zoom: 15,
-                    ),
-                    markers: {
-                      Marker(
-                        markerId: const MarkerId('pos'),
-                        position: LatLng(widget.incidencia.latitude!, widget.incidencia.longitude!),
-                      )
-                    },
-                    liteModeEnabled: true,
-                    zoomControlsEnabled: false,
-                    scrollGesturesEnabled: false,
+                  child: HtmlMapWidget(
+                    lat: widget.incidencia.latitud!,
+                    lng: widget.incidencia.longitud!,
+                    incidencias: [widget.incidencia],
                   ),
                 ),
               ),
@@ -68,26 +62,26 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  widget.incidencia.category,
+                  widget.incidencia.categoriaNombre ?? 'Sin categoría',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
                 Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(widget.incidencia.createdAt),
+                  DateFormat('dd/MM/yyyy HH:mm').format(widget.incidencia.fechaCreacion),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              widget.incidencia.title,
+              widget.incidencia.titulo,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
-              widget.incidencia.description,
+              widget.incidencia.descripcion,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 32),
@@ -102,25 +96,25 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _StatusButton(
-                  status: IncidenciaStatus.pending,
-                  currentStatus: widget.incidencia.status,
-                  label: 'Pendiente',
+                  statusId: 1,
+                  currentStatusId: widget.incidencia.estadoId,
+                  label: 'Abierta',
                   color: Colors.orange,
-                  onPressed: () => _updateStatus(ref, context, IncidenciaStatus.pending),
+                  onPressed: () => _updateStatus(ref, context, 1),
                 ),
                 _StatusButton(
-                  status: IncidenciaStatus.inProgress,
-                  currentStatus: widget.incidencia.status,
+                  statusId: 2,
+                  currentStatusId: widget.incidencia.estadoId,
                   label: 'En Proceso',
                   color: Colors.blue,
-                  onPressed: () => _updateStatus(ref, context, IncidenciaStatus.inProgress),
+                  onPressed: () => _updateStatus(ref, context, 2),
                 ),
                 _StatusButton(
-                  status: IncidenciaStatus.resolved,
-                  currentStatus: widget.incidencia.status,
+                  statusId: 3,
+                  currentStatusId: widget.incidencia.estadoId,
                   label: 'Resuelta',
                   color: Colors.green,
-                  onPressed: () => _updateStatus(ref, context, IncidenciaStatus.resolved),
+                  onPressed: () => _updateStatus(ref, context, 3),
                 ),
               ],
             ),
@@ -130,12 +124,19 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
     );
   }
 
-  Future<void> _updateStatus(WidgetRef ref, BuildContext context, IncidenciaStatus status) async {
+  Future<void> _updateStatus(WidgetRef ref, BuildContext context, int estadoId) async {
+    final currentUser = ref.read(authStateProvider);
+    if (currentUser == null) return;
+
     try {
-      await ref.read(incidenciaRepositoryProvider).updateIncidenciaStatus(widget.incidencia.id, status);
+      await ref.read(incidenciaRepositoryProvider).updateIncidenciaStatus(
+        widget.incidencia.id, 
+        estadoId,
+        currentUser.uid,
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Estado actualizado a ${status.name}')),
+          SnackBar(content: Text('Estado actualizado correctamente')),
         );
         Navigator.pop(context);
       }
@@ -150,15 +151,15 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
 }
 
 class _StatusButton extends StatelessWidget {
-  final IncidenciaStatus status;
-  final IncidenciaStatus currentStatus;
+  final int statusId;
+  final int currentStatusId;
   final String label;
   final Color color;
   final VoidCallback onPressed;
 
   const _StatusButton({
-    required this.status,
-    required this.currentStatus,
+    required this.statusId,
+    required this.currentStatusId,
     required this.label,
     required this.color,
     required this.onPressed,
@@ -166,7 +167,7 @@ class _StatusButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = status == currentStatus;
+    final isSelected = statusId == currentStatusId;
     return ElevatedButton(
       onPressed: isSelected ? null : onPressed,
       style: ElevatedButton.styleFrom(

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/incidencia_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,7 +17,7 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
   String _categoria = 'Limpieza';
-  File? _image;
+  XFile? _image;
   Position? _currentPosition;
   bool _isLocating = false;
   final ImagePicker _picker = ImagePicker();
@@ -53,7 +54,7 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
       imageQuality: 50,
     );
     if (pickedFile != null) {
-      setState(() => _image = File(pickedFile.path));
+      setState(() => _image = pickedFile);
     }
   }
 
@@ -72,12 +73,12 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
     }
 
     await ref.read(incidenciaControllerProvider.notifier).submitIncidencia(
-      title: _tituloController.text,
-      description: _descripcionController.text,
-      category: _categoria,
-      image: _image,
-      latitude: _currentPosition?.latitude,
-      longitude: _currentPosition?.longitude,
+      titulo: _tituloController.text,
+      descripcion: _descripcionController.text,
+      categoria: _categoria,
+      imagen: _image,
+      latitud: _currentPosition?.latitude,
+      longitud: _currentPosition?.longitude,
     );
   }
 
@@ -137,7 +138,9 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
                         )
                       : ClipRRect(
                           borderRadius: BorderRadius.circular(24),
-                          child: Image.file(_image!, fit: BoxFit.cover),
+                          child: kIsWeb 
+                            ? Image.network(_image!.path, fit: BoxFit.cover)
+                            : Image.file(File(_image!.path), fit: BoxFit.cover),
                         ),
                 ),
               ),

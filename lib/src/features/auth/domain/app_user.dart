@@ -1,27 +1,35 @@
-enum UserRole { citizen, admin }
+enum UserRole { ciudadano, tecnico, administrador }
 
 class AppUser {
   final String uid;
   final String email;
   final String? nombre;
-  final UserRole role;
+  final String? telefono;
+  final int rolId;
 
   AppUser({
     required this.uid,
     required this.email,
     this.nombre,
-    this.role = UserRole.citizen,
+    this.telefono,
+    this.rolId = 1,
   });
+
+  UserRole get role {
+    switch (rolId) {
+      case 2: return UserRole.tecnico;
+      case 3: return UserRole.administrador;
+      default: return UserRole.ciudadano;
+    }
+  }
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
-      uid: json['uid'] ?? '',
+      uid: json['uid']?.toString() ?? '',
       email: json['email'] ?? '',
       nombre: json['nombre'],
-      role: UserRole.values.firstWhere(
-        (e) => e.name == (json['role'] ?? 'citizen'),
-        orElse: () => UserRole.citizen,
-      ),
+      telefono: json['telefono'],
+      rolId: json['rol_id'] ?? 1,
     );
   }
 
@@ -30,7 +38,8 @@ class AppUser {
       'uid': uid,
       'email': email,
       'nombre': nombre,
-      'role': role.name,
+      'telefono': telefono,
+      'rol_id': rolId,
     };
   }
 }

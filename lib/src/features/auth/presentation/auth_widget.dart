@@ -18,7 +18,7 @@ class AuthWidget extends ConsumerWidget {
     final user = ref.watch(authStateProvider);
 
     if (user != null) {
-      if (user.role == UserRole.admin) {
+      if (user.role == UserRole.administrador) {
         return const AdminHomeScreen();
       }
       return const HomeScreen();

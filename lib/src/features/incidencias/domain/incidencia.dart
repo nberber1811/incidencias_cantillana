@@ -1,63 +1,75 @@
 
-enum IncidenciaStatus { pending, inProgress, resolved }
+
 
 class Incidencia {
   final String id;
-  final String userId;
-  final String title;
-  final String description;
-  final String? imageUrl;
-  final double? latitude;
-  final double? longitude;
-  final String category;
-  final IncidenciaStatus status;
-  final DateTime createdAt;
+  final String usuarioId;
+  final String titulo;
+  final String descripcion;
+  final String? image;
+  final DateTime fechaCreacion;
+  final DateTime? fechaCierre;
+  final double? latitud;
+  final double? longitud;
+  final String? direccion;
+  final int? categoriaId;
+  final String? categoriaNombre;
+  final int estadoId;
+  final String? estadoNombre;
 
   Incidencia({
     required this.id,
-    required this.userId,
-    required this.title,
-    required this.description,
-    this.imageUrl,
-    this.latitude,
-    this.longitude,
-    required this.category,
-    this.status = IncidenciaStatus.pending,
-    required this.createdAt,
+    required this.usuarioId,
+    required this.titulo,
+    required this.descripcion,
+    this.image,
+    required this.fechaCreacion,
+    this.fechaCierre,
+    this.latitud,
+    this.longitud,
+    this.direccion,
+    this.categoriaId,
+    this.categoriaNombre,
+    this.estadoId = 1,
+    this.estadoNombre,
   });
 
   factory Incidencia.fromJson(Map<String, dynamic> json) {
     return Incidencia(
-      id: json['id'] ?? '',
-      userId: json['userId'] ?? '',
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      imageUrl: json['imageUrl'],
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      category: json['category'] ?? 'Otros',
-      status: IncidenciaStatus.values.firstWhere(
-        (e) => e.name == (json['status'] ?? 'pending'),
-        orElse: () => IncidenciaStatus.pending,
-      ),
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt'] as String)
+      id: json['id']?.toString() ?? '',
+      usuarioId: json['usuario_id']?.toString() ?? '',
+      titulo: json['titulo'] ?? '',
+      descripcion: json['descripcion'] ?? '',
+      image: json['image'],
+      latitud: double.tryParse(json['latitud']?.toString() ?? ''),
+      longitud: double.tryParse(json['longitud']?.toString() ?? ''),
+      direccion: json['direccion'],
+      categoriaId: json['categoria_id'],
+      categoriaNombre: json['categoriaNombre'],
+      estadoId: json['estado_id'] ?? 1,
+      estadoNombre: json['estadoNombre'] ?? 'Abierta',
+      fechaCreacion: json['fecha_creacion'] != null 
+          ? DateTime.parse(json['fecha_creacion'] as String)
           : DateTime.now(),
+      fechaCierre: json['fecha_cierre'] != null
+          ? DateTime.parse(json['fecha_cierre'] as String)
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'userId': userId,
-      'title': title,
-      'description': description,
-      'imageUrl': imageUrl,
-      'latitude': latitude,
-      'longitude': longitude,
-      'category': category,
-      'status': status.name,
-      'createdAt': createdAt.toIso8601String(),
+      'usuario_id': usuarioId,
+      'titulo': titulo,
+      'descripcion': descripcion,
+      'image': image,
+      'latitud': latitud,
+      'longitud': longitud,
+      'direccion': direccion,
+      'categoria_id': categoriaId,
+      'estado_id': estadoId,
+      'fecha_creacion': fechaCreacion.toIso8601String(),
     };
   }
 }
