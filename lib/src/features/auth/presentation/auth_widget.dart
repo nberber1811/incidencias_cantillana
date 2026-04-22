@@ -12,9 +12,6 @@ class AuthWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isGuest = ref.watch(isGuestProvider);
-    if (isGuest) return const HomeScreen();
-
     final user = ref.watch(authStateProvider);
 
     if (user != null) {

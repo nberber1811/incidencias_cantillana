@@ -1,8 +1,11 @@
+import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/incidencia_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/domain/incidencia.dart';
+import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/edit_incidencia_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class IncidenciaCard extends StatelessWidget {
+class IncidenciaCard extends ConsumerWidget {
   final Incidencia incidencia;
   final VoidCallback? onTap;
 
@@ -29,8 +32,31 @@ class IncidenciaCard extends StatelessWidget {
     return statusName ?? 'Abierta';
   }
 
+  Future<void> _showDeleteDialog(BuildContext context, WidgetRef ref) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Borrar incidencia?'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCELAR'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ref.read(incidenciaControllerProvider.notifier).deleteIncidencia(incidencia.id);
+            },
+            child: const Text('BORRAR', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     const String baseUploadUrl = 'https://alumno23.fpcantillana.org/uploads/';
     
     return Card(
@@ -76,6 +102,28 @@ class IncidenciaCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const Spacer(),
+                      if (incidencia.estadoId == 1) ...[
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditIncidenciaScreen(incidencia: incidencia),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.edit_note, color: Colors.blue),
+                          tooltip: 'Editar incidencia',
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _showDeleteDialog(context, ref),
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          tooltip: 'Borrar incidencia',
+                        ),
+                      ],
                       Text(
                         DateFormat('dd/MM/yyyy HH:mm').format(incidencia.fechaCreacion),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),

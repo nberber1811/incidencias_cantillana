@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ayuntamiento_incidencias/src/features/auth/domain/app_user.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -15,28 +16,58 @@ class AuthRepository {
 
   AuthRepository();
 
-  Future<AppUser?> signInWithEmailAndPassword(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'email': email, 'password': password}),
-    );
+  static const _userKey = 'auth_user';
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      final data = json.decode(response.body);
-      return AppUser.fromJson(data['user']);
-    } else {
-      throw Exception('Login failed');
-    }
-  }
-
-  Future<AppUser?> createUserWithEmailAndPassword(String email, String password, {String? nombre, String? telefono}) async {
+  Future<AppUser?> register(String email, String password, String nombre, String telefono) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
-        'email': email, 
-        'password': password, 
+        'email': email,
+        'password': password,
+        'nombre': nombre,
+        'telefono': telefono,
+      }),
+    );
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final user = AppUser.fromJson(data['user']);
+      await persistUser(user);
+      return user;
+    } else {
+      final data = json.decode(response.body);
+      final detail = data['error_detalle'] ?? data['message'] ?? 'Error desconocido';
+      throw Exception(detail);
+    }
+  }
+
+  Future<AppUser?> login(String email, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final user = AppUser.fromJson(data['user']);
+      await persistUser(user);
+      return user;
+    } else {
+      final data = json.decode(response.body);
+      throw Exception(data['message'] ?? 'Error al iniciar sesión');
+    }
+  }
+
+  Future<AppUser?> updateProfile(String uid, String nombre, String telefono) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile/$uid'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
         'nombre': nombre,
         'telefono': telefono,
       }),
@@ -44,13 +75,34 @@ class AuthRepository {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(response.body);
-      return AppUser.fromJson(data['user']);
+      final user = AppUser.fromJson(data['user']);
+      await persistUser(user);
+      return user;
     } else {
-      throw Exception('Registration failed');
+      throw Exception('Failed to update profile');
     }
   }
 
+  Future<void> persistUser(AppUser user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, json.encode(user.toJson()));
+  }
+
+  Future<AppUser?> getPersistedUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString(_userKey);
+    if (userJson != null) {
+      return AppUser.fromJson(json.decode(userJson));
+    }
+    return null;
+  }
+
+  Future<void> clearPersistedUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+  }
+
   Future<void> signOut() async {
-    // Session is handled in Flutter for now (local memory)
+    await clearPersistedUser();
   }
 }

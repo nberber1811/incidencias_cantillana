@@ -20,6 +20,8 @@ router.get('/', controller.getAllIncidencias);
 router.get('/user/:userId', controller.getIncidenciasByUser);
 router.post('/upload', upload.single('image'), controller.uploadOnly);
 router.post('/', controller.createIncidencia);
+router.put('/:id', controller.updateIncidencia);
+router.delete('/:id', controller.deleteIncidencia);
 router.patch('/:id/status', controller.updateStatus);
 
 module.exports = router;

@@ -29,15 +29,10 @@ class IncidenciaController extends StateNotifier<AsyncValue<void>> {
     double? longitud,
     String? direccion,
   }) async {
-    final isGuest = _ref.read(isGuestProvider);
     final user = _ref.read(authStateProvider);
 
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      if (isGuest) {
-        await Future.delayed(const Duration(seconds: 2));
-        return;
-      }
       
       String? imageUrl;
       if (imagen != null) {
@@ -66,6 +61,56 @@ class IncidenciaController extends StateNotifier<AsyncValue<void>> {
 
       await _repository.createIncidencia(incidencia);
     });
+    return !state.hasError;
+  }
+
+  Future<bool> editIncidencia({
+    required String id,
+    required String titulo,
+    required String descripcion,
+    required String categoria,
+    XFile? imagen,
+    String? existingImageUrl,
+    double? latitud,
+    double? longitud,
+    String? direccion,
+  }) async {
+    final user = _ref.read(authStateProvider);
+
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      String? imageUrl = existingImageUrl;
+      if (imagen != null) {
+        imageUrl = await _repository.uploadImage(imagen);
+      }
+
+      int? categoryId;
+      if (categoria.contains('Alumbrado')) categoryId = 1;
+      else if (categoria.contains('Limpieza')) categoryId = 2;
+      else if (categoria.contains('Vía')) categoryId = 3;
+      else if (categoria.contains('Parques')) categoryId = 4;
+
+      final incidencia = Incidencia(
+        id: id,
+        usuarioId: user?.uid ?? '',
+        titulo: titulo,
+        descripcion: descripcion,
+        categoriaId: categoryId,
+        image: imageUrl,
+        latitud: latitud,
+        longitud: longitud,
+        direccion: direccion,
+        fechaCreacion: DateTime.now(), // El backend mantendrá la fecha original o podemos manejarlo
+      );
+
+      await _repository.updateIncidencia(incidencia);
+    });
+    return !state.hasError;
+  }
+
+  Future<bool> deleteIncidencia(String id) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _repository.deleteIncidencia(id));
     return !state.hasError;
   }
 }

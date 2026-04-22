@@ -16,10 +16,12 @@ class NewIncidenciaScreen extends ConsumerStatefulWidget {
 class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
+  final _direccionController = TextEditingController();
   String _categoria = 'Limpieza';
   XFile? _image;
   Position? _currentPosition;
   bool _isLocating = false;
+  bool _useGps = true;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -71,14 +73,33 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
       );
       return;
     }
+    if (_descripcionController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, añade una descripción detallada')),
+      );
+      return;
+    }
+    if (_useGps && _currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hemos podido obtener tu ubicación GPS. Desactiva el GPS avanzado para poner la dirección a mano.')),
+      );
+      return;
+    }
+    if (!_useGps && _direccionController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, indica la dirección manualmente')),
+      );
+      return;
+    }
 
     await ref.read(incidenciaControllerProvider.notifier).submitIncidencia(
       titulo: _tituloController.text,
       descripcion: _descripcionController.text,
       categoria: _categoria,
       imagen: _image,
-      latitud: _currentPosition?.latitude,
-      longitud: _currentPosition?.longitude,
+      latitud: _useGps ? _currentPosition?.latitude : null,
+      longitud: _useGps ? _currentPosition?.longitude : null,
+      direccion: _direccionController.text.isNotEmpty ? _direccionController.text : null,
     );
   }
 
@@ -171,20 +192,48 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
                     .toList(),
                 onChanged: (val) => setState(() => _categoria = val!),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
               
-              ListTile(
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text("Ubicación de la incidencia", 
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              
+              SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  _currentPosition != null ? Icons.location_on : Icons.location_off,
-                  color: _currentPosition != null ? Colors.green : Colors.red,
-                ),
-                title: Text(_currentPosition != null 
-                    ? "Ubicación detectada" 
-                    : (_isLocating ? "Buscando ubicación..." : "No se pudo obtener la ubicación")),
-                subtitle: const Text("Se enviarán las coordenadas automáticamente"),
-                trailing: _isLocating ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+                title: const Text("Usar GPS automático"),
+                subtitle: const Text("Detecta tu posición actual"),
+                value: _useGps,
+                onChanged: (val) {
+                  setState(() => _useGps = val);
+                  if (val && _currentPosition == null) {
+                    _determinePosition();
+                  }
+                },
               ),
+              
+              if (_useGps)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _currentPosition != null ? Icons.location_on : Icons.location_off,
+                    color: _currentPosition != null ? Colors.green : Colors.red,
+                  ),
+                  title: Text(_currentPosition != null 
+                      ? "Ubicación detectada" 
+                      : (_isLocating ? "Buscando ubicación..." : "No se pudo obtener la ubicación")),
+                  trailing: _isLocating ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : null,
+                )
+              else
+                TextField(
+                  controller: _direccionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Dirección manual',
+                    hintText: 'Escribe la calle, plaza o zona...',
+                    prefixIcon: Icon(Icons.map_outlined),
+                  ),
+                ),
               
               const SizedBox(height: 32),
               ElevatedButton.icon(

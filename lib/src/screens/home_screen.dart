@@ -1,5 +1,6 @@
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/presentation/profile_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/data/incidencia_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/map_view_screen.dart';
 import 'package:ayuntamiento_incidencias/src/screens/new_incidencia_screen.dart';
@@ -18,15 +19,25 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mis Incidencias'),
-        leading: IconButton(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const MapViewScreen()),
-          ),
-          icon: const Icon(Icons.map_outlined),
-          tooltip: 'Ver mapa',
-        ),
+        leading: user?.rolId == 1 
+          ? null 
+          : IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MapViewScreen()),
+              ),
+              icon: const Icon(Icons.map_outlined),
+              tooltip: 'Ver mapa',
+            ),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            ),
+            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: 'Mi Perfil',
+          ),
           IconButton(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
             icon: const Icon(Icons.logout_rounded),

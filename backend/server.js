@@ -57,8 +57,8 @@ app.use('/api/auth', authRoutes);
 const frontendPath = path.join(__dirname, '..');
 app.use(express.static(frontendPath));
 
-// Catch-all para Flutter (SPA) compatible con Express 5
-app.get('/*', (req, res) => {
+// Fallback para Flutter (SPA): Cualquier otra ruta sirve el index.html
+app.use((req, res) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
     return res.status(404).json({ error: 'Not found' });
   }

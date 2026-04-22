@@ -1,5 +1,6 @@
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -14,6 +15,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _telefonoController = TextEditingController();
+  final _prefijoController = TextEditingController(text: '+34');
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -27,6 +30,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               SnackBar(content: Text('Error: $e')),
             );
           },
+          data: (_) {
+            if (previous?.isLoading ?? false) {
+               ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Cuenta creada con éxito. Ya puedes entrar.')),
+              );
+              Navigator.pop(context);
+            }
+          }
         );
       },
     );
@@ -61,6 +72,48 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   validator: (value) =>
                       (value == null || value.isEmpty) ? 'Por favor introduce tu nombre' : null,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      child: TextFormField(
+                        controller: _prefijoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Prefijo',
+                        ),
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        validator: (value) =>
+                            (value == null || value.isEmpty) ? 'Error' : null,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _telefonoController,
+                        decoration: const InputDecoration(
+                          labelText: 'Teléfono',
+                          hintText: '123456789',
+                          prefixIcon: Icon(Icons.phone_outlined),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(9),
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return 'Obligatorio';
+                          if (value.length != 9) return 'Debe tener 9 números';
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -101,13 +154,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ? null
                       : () {
                           if (_formKey.currentState!.validate()) {
-                            ref.read(authControllerProvider.notifier).signUp(
+                            final fullPhone = '${_prefijoController.text}${_telefonoController.text}';
+                            ref
+                                .read(authControllerProvider.notifier)
+                                .signUp(
                                   _emailController.text,
                                   _passwordController.text,
                                   nombre: _nombreController.text,
+                                  telefono: fullPhone,
                                 );
-                            // Note: AuthWidget will handle the redirection once signed up
-                            Navigator.pop(context);
                           }
                         },
                   child: state.isLoading

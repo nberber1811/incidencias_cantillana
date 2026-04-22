@@ -99,10 +99,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 const SizedBox(height: 32),
                 TextButton(
-                  onPressed: () => ref.read(authControllerProvider.notifier).signInAsGuest(),
-                  child: const Text('Entrar en modo invitado'),
-                ),
-                TextButton(
                   onPressed: () {
                     Navigator.push(
                       context,

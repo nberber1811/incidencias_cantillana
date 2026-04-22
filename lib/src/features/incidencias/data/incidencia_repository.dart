@@ -102,6 +102,29 @@ class IncidenciaRepository {
     }
   }
 
+  Future<void> updateIncidencia(Incidencia incidencia) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/${incidencia.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(incidencia.toJson()),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to update incidencia');
+    }
+  }
+
+  Future<void> deleteIncidencia(String id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/$id'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('Failed to delete incidencia');
+    }
+  }
+
   Future<void> updateIncidenciaStatus(String id, int estadoId, String usuarioId) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/$id/status'),

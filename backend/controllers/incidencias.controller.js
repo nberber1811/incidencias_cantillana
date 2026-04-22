@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const fs = require('fs');
+const path = require('path');
 
 exports.getAllIncidencias = async (req, res) => {
   try {
@@ -86,5 +88,79 @@ exports.updateStatus = async (req, res) => {
     res.json({ message: 'Estado actualizado e historial registrado' });
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar el estado', error });
+  }
+};
+
+exports.updateIncidencia = async (req, res) => {
+  const { id } = req.params;
+  const { titulo, descripcion, categoria_id, latitud, longitud, direccion, image } = req.body;
+
+  try {
+    // 1. Verificar si la incidencia existe y obtener imagen actual
+    const [rows] = await db.query('SELECT estado_id, image FROM incidencias WHERE id = ?', [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Incidencia no encontrada' });
+    }
+
+    if (rows[0].estado_id !== 1) {
+      return res.status(403).json({ message: 'Solo se pueden editar incidencias en estado abierto' });
+    }
+
+    const oldImage = rows[0].image;
+
+    // 2. Actualizar campos
+    await db.query(
+      'UPDATE incidencias SET titulo = ?, descripcion = ?, categoria_id = ?, latitud = ?, longitud = ?, direccion = ?, image = ? WHERE id = ?',
+      [titulo, descripcion, categoria_id || null, latitud, longitud, direccion, image, id]
+    );
+
+    // 3. Si la imagen ha cambiado, borrar la antigua
+    if (image && oldImage && image !== oldImage) {
+      const oldImagePath = path.join(__dirname, '..', 'uploads', oldImage);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
+
+    res.json({ message: 'Incidencia actualizada con éxito' });
+  } catch (error) {
+    console.error('Error al actualizar incidencia:', error);
+    res.status(500).json({ message: 'Error al actualizar la incidencia', error: error.message });
+  }
+};
+
+exports.deleteIncidencia = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // 1. Verificar si la incidencia existe y obtener la imagen
+    const [rows] = await db.query('SELECT estado_id, image FROM incidencias WHERE id = ?', [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Incidencia no encontrada' });
+    }
+
+    if (rows[0].estado_id !== 1) {
+      return res.status(403).json({ message: 'Solo se pueden borrar incidencias en estado abierto' });
+    }
+
+    const imageName = rows[0].image;
+
+    // 2. Borrar incidencia de la DB
+    await db.query('DELETE FROM incidencias WHERE id = ?', [id]);
+
+    // 3. Borrar archivo físico si existe
+    if (imageName) {
+      const imagePath = path.join(__dirname, '..', 'uploads', imageName);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+    }
+
+    res.json({ message: 'Incidencia borrada con éxito y archivo eliminado' });
+  } catch (error) {
+    console.error('Error al borrar incidencia:', error);
+    res.status(500).json({ message: 'Error al borrar la incidencia', error: error.message });
   }
 };
