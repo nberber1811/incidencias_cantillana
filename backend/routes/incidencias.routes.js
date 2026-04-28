@@ -17,7 +17,10 @@ const upload = multer({ storage: storage });
 
 // Definición de rutas
 router.get('/', controller.getAllIncidencias);
+router.get('/categorias', controller.getCategorias);
+router.get('/estados', controller.getEstados);
 router.get('/user/:userId', controller.getIncidenciasByUser);
+router.get('/technician/:tecnicoId', controller.getIncidenciasByTechnician);
 router.post('/upload', upload.single('image'), controller.uploadOnly);
 router.post('/', controller.createIncidencia);
 router.put('/:id', controller.updateIncidencia);

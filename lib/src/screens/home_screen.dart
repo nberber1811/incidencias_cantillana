@@ -3,33 +3,87 @@ import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/profile_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/data/incidencia_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/map_view_screen.dart';
+import 'package:ayuntamiento_incidencias/src/screens/incidencia_detail_screen.dart';
 import 'package:ayuntamiento_incidencias/src/screens/new_incidencia_screen.dart';
 import 'package:ayuntamiento_incidencias/src/shared/widgets/incidencia_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _isSearching = false;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider);
-    final incidenciasAsync = ref.watch(userIncidenciasStreamProvider(user?.uid ?? ''));
+    final uid = user?.uid ?? '';
+    final incidenciasAsync = ref.watch(userIncidenciasStreamProvider(uid));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Incidencias'),
-        leading: user?.rolId == 1 
-          ? null 
-          : IconButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MapViewScreen()),
-              ),
-              icon: const Icon(Icons.map_outlined),
-              tooltip: 'Ver mapa',
-            ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar mis incidencias...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.white70),
+                ),
+                style: const TextStyle(color: Colors.white),
+                onChanged: (value) => setState(() => _searchQuery = value),
+              )
+            : const Text('Mis Incidencias'),
+        leading: _isSearching
+            ? IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isSearching = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+                icon: const Icon(Icons.arrow_back),
+              )
+            : (user?.rolId == 1 
+              ? null 
+              : IconButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MapViewScreen()),
+                  ),
+                  icon: const Icon(Icons.map_outlined),
+                  tooltip: 'Ver mapa',
+                )),
         actions: [
+          if (!_isSearching)
+            IconButton(
+              onPressed: () => setState(() => _isSearching = true),
+              icon: const Icon(Icons.search),
+              tooltip: 'Buscar',
+            ),
+          if (_isSearching && _searchQuery.isNotEmpty)
+            IconButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+              },
+              icon: const Icon(Icons.clear),
+            ),
           IconButton(
             onPressed: () => Navigator.push(
               context,
@@ -47,28 +101,30 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: incidenciasAsync.when(
         data: (incidencias) {
-          if (incidencias.isEmpty) {
+          var filtered = incidencias;
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            filtered = incidencias.where((i) => 
+              i.titulo.toLowerCase().contains(query) || 
+              i.descripcion.toLowerCase().contains(query)
+            ).toList();
+          }
+
+          if (filtered.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.assignment_turned_in_outlined,
+                    _isSearching ? Icons.search_off : Icons.assignment_turned_in_outlined,
                     size: 80,
                     color: Colors.grey[300],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No hay incidencias reportadas',
+                    _isSearching ? 'No se encontraron coincidencias' : 'No hay incidencias reportadas',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: Colors.grey[600],
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Pulsa el botón + para empezar',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[400],
                         ),
                   ),
                 ],
@@ -77,9 +133,18 @@ class HomeScreen extends ConsumerWidget {
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: incidencias.length,
+            itemCount: filtered.length,
             itemBuilder: (context, index) {
-              return IncidenciaCard(incidencia: incidencias[index]);
+              final incidencia = filtered[index];
+              return IncidenciaCard(
+                incidencia: incidencia,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => IncidenciaDetailScreen(incidencia: incidencia),
+                  ),
+                ),
+              );
             },
           );
         },
@@ -98,4 +163,4 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-}
+}

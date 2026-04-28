@@ -19,6 +19,11 @@ try {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+process.on('uncaughtException', (err) => {
+  require('fs').appendFileSync('error_debug.log', `${new Date().toISOString()} - ${err.stack}\n`);
+  process.exit(1);
+});
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -37,6 +42,7 @@ try {
 
 const incidenciasRoutes = require('./routes/incidencias.routes');
 const authRoutes = require('./routes/auth.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 // Endpoint de diagnóstico
 app.get('/api/test-db', async (req, res) => {
@@ -52,6 +58,7 @@ app.get('/api/test-db', async (req, res) => {
 // Rutas
 app.use('/api/incidencias', incidenciasRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Frontend SPA support
 const frontendPath = path.join(__dirname, '..');

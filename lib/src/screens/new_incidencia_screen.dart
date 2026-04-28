@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:ayuntamiento_incidencias/src/features/incidencias/data/incidencia_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/incidencia_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,8 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _direccionController = TextEditingController();
-  String _categoria = 'Limpieza';
+  int? _categoriaId;
+  bool _hasInitializedCategory = false;
   XFile? _image;
   Position? _currentPosition;
   bool _isLocating = false;
@@ -79,6 +81,12 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
       );
       return;
     }
+    if (_categoriaId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona una categoría')),
+      );
+      return;
+    }
     if (_useGps && _currentPosition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hemos podido obtener tu ubicación GPS. Desactiva el GPS avanzado para poner la dirección a mano.')),
@@ -95,7 +103,7 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
     await ref.read(incidenciaControllerProvider.notifier).submitIncidencia(
       titulo: _tituloController.text,
       descripcion: _descripcionController.text,
-      categoria: _categoria,
+      categoria: _categoriaId.toString(),
       imagen: _image,
       latitud: _useGps ? _currentPosition?.latitude : null,
       longitud: _useGps ? _currentPosition?.longitude : null,
@@ -106,6 +114,7 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(incidenciaControllerProvider);
+    final categoriasAsync = ref.watch(categoriasProvider);
 
     ref.listen<AsyncValue<void>>(
       incidenciaControllerProvider,
@@ -184,13 +193,27 @@ class _NewIncidenciaScreenState extends ConsumerState<NewIncidenciaScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _categoria,
-                decoration: const InputDecoration(labelText: 'Categoría'),
-                items: ['Limpieza', 'Alumbrado', 'Vía Pública', 'Mobiliario', 'Otros']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (val) => setState(() => _categoria = val!),
+              // Selector de Categoría Dinámico
+              categoriasAsync.when(
+                data: (categorias) {
+                  // Si la categoría seleccionada no está en la lista (o es la inicial), ponemos la primera
+                  if (categorias.isNotEmpty && !_hasInitializedCategory) {
+                    _categoriaId = categorias.first.id;
+                    _hasInitializedCategory = true;
+                  }
+                  
+                  return DropdownButtonFormField<int>(
+                    value: _categoriaId,
+                    decoration: const InputDecoration(labelText: 'Categoría'),
+                    items: categorias.map((cat) => DropdownMenuItem<int>(
+                      value: cat.id,
+                      child: Text(cat.nombre),
+                    )).toList(),
+                    onChanged: (val) => setState(() => _categoriaId = val),
+                  );
+                },
+                loading: () => const LinearProgressIndicator(),
+                error: (e, st) => Text('Error cargando categorías: $e'),
               ),
               const SizedBox(height: 24),
               

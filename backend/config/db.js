@@ -11,4 +11,16 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Prueba de conexión inmediata con log a archivo
+pool.getConnection((err, connection) => {
+  const fs = require('fs');
+  if (err) {
+    fs.appendFileSync('db_error.log', `${new Date().toISOString()} - ERROR CONEXIÓN DB: ${err.message}\n`);
+    console.error('Error de conexión a la base de datos:', err);
+  } else {
+    fs.appendFileSync('db_error.log', `${new Date().toISOString()} - Conexión DB OK ✅\n`);
+    connection.release();
+  }
+});
+
 module.exports = pool.promise();

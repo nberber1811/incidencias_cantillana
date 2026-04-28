@@ -1,4 +1,5 @@
 import 'package:ayuntamiento_incidencias/src/features/admin/presentation/admin_home_screen.dart';
+import 'package:ayuntamiento_incidencias/src/features/technician/presentation/technician_home_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/domain/app_user.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
@@ -17,6 +18,9 @@ class AuthWidget extends ConsumerWidget {
     if (user != null) {
       if (user.role == UserRole.administrador) {
         return const AdminHomeScreen();
+      }
+      if (user.role == UserRole.tecnico) {
+        return const TechnicianHomeScreen();
       }
       return const HomeScreen();
     }

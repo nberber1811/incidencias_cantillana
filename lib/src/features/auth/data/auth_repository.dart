@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:ayuntamiento_incidencias/src/features/auth/domain/app_user.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,11 +13,16 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authStateProvider = StateProvider<AppUser?>((ref) => null);
 
 class AuthRepository {
-  final String baseUrl = 'https://alumno23.fpcantillana.org/api/auth';
+  final String baseUrl = kIsWeb 
+    ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
+        ? 'http://localhost:3000/api/auth'
+        : '${Uri.base.scheme}://${Uri.base.host}/api/auth')
+    : 'http://alumno23.fpcantillana.org/api/auth';
 
   AuthRepository();
 
   static const _userKey = 'auth_user';
+  static const _tokenKey = 'auth_token';
 
   Future<AppUser?> register(String email, String password, String nombre, String telefono) async {
     final response = await http.post(
@@ -55,6 +61,11 @@ class AuthRepository {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final user = AppUser.fromJson(data['user']);
+      final token = data['token'];
+      
+      final prefs = await SharedPreferences.getInstance();
+      if (token != null) await prefs.setString(_tokenKey, token);
+      
       await persistUser(user);
       return user;
     } else {
@@ -100,6 +111,7 @@ class AuthRepository {
   Future<void> clearPersistedUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
+    await prefs.remove(_tokenKey);
   }
 
   Future<void> signOut() async {

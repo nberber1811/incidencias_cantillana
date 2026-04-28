@@ -1,0 +1,5 @@
+Hacer el historial de cambios de estados en la tabla
+Que el admin pueda crear categorias y roles
+Email verificación
+Se me olvidó la contraseña -> botón para recuperarla al correo
+Hacer registro con google

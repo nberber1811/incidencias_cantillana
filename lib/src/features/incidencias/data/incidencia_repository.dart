@@ -14,14 +14,31 @@ final userIncidenciasStreamProvider = StreamProvider.family<List<Incidencia>, St
   return ref.watch(incidenciaRepositoryProvider).watchUserIncidencias(userId);
 });
 
+final technicianIncidenciasStreamProvider = StreamProvider.family<List<Incidencia>, String>((ref, tecnicoId) {
+  return ref.watch(incidenciaRepositoryProvider).watchTechnicianIncidencias(tecnicoId);
+});
+
 final allIncidenciasStreamProvider = StreamProvider<List<Incidencia>>((ref) {
   return ref.watch(incidenciaRepositoryProvider).watchAllIncidencias();
+});
+
+// Proveedores globales de categorías y estados
+final categoriasProvider = FutureProvider<List<dynamic>>((ref) async {
+  return ref.watch(incidenciaRepositoryProvider).getCategorias();
+});
+
+final estadosProvider = FutureProvider<List<dynamic>>((ref) async {
+  return ref.watch(incidenciaRepositoryProvider).getEstados();
 });
 
 class IncidenciaRepository {
   // Base URL of the new API
   // Base URL of the new Node.js API
-  final String baseUrl = 'https://alumno23.fpcantillana.org/api/incidencias';
+  final String baseUrl = kIsWeb 
+    ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
+        ? 'http://localhost:3000/api/incidencias'
+        : '${Uri.base.scheme}://${Uri.base.host}/api/incidencias')
+    : 'http://alumno23.fpcantillana.org/api/incidencias';
 
   IncidenciaRepository();
 
@@ -41,6 +58,23 @@ class IncidenciaRepository {
         yield [];
       }
       await Future.delayed(const Duration(seconds: 5));
+    }
+  }
+
+  Stream<List<Incidencia>> watchTechnicianIncidencias(String tecnicoId) async* {
+    while (true) {
+      try {
+        final response = await http.get(Uri.parse('$baseUrl/technician/$tecnicoId'));
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          yield data.map((item) => Incidencia.fromJson(item)).toList();
+        } else {
+          yield [];
+        }
+      } catch (e) {
+        yield [];
+      }
+      await Future.delayed(const Duration(seconds: 10));
     }
   }
 
@@ -125,18 +159,53 @@ class IncidenciaRepository {
     }
   }
 
-  Future<void> updateIncidenciaStatus(String id, int estadoId, String usuarioId) async {
+  Future<void> updateIncidenciaStatus(String id, int estadoId, String usuarioId, {String? comentario}) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/$id/status'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'estado_id': estadoId,
         'usuario_id': usuarioId,
+        'comentario_tecnico': comentario,
       }),
     );
 
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to update status');
     }
+  }
+
+  Future<List<dynamic>> getCategorias() async {
+    final response = await http.get(Uri.parse('$baseUrl/../incidencias/categorias'));
+    // Nota: He usado /../ para subir un nivel desde /api/incidencias
+    // A veces es mejor tener una baseUrl limpia
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((e) => LookupItem.fromJson(e)).toList();
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getEstados() async {
+    final response = await http.get(Uri.parse('$baseUrl/../incidencias/estados'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      return data.map((e) => LookupItem.fromJson(e)).toList();
+    }
+    return [];
+  }
+}
+
+class LookupItem {
+  final int id;
+  final String nombre;
+
+  LookupItem({required this.id, required this.nombre});
+
+  factory LookupItem.fromJson(Map<String, dynamic> json) {
+    return LookupItem(
+      id: json['id'],
+      nombre: json['nombre'],
+    );
   }
 }

@@ -8,10 +8,14 @@ exports.getAllIncidencias = async (req, res) => {
       SELECT i.*, 
              DATE_FORMAT(i.fecha_creacion, '%Y-%m-%dT%H:%i:%sZ') as fecha_creacion,
              c.nombre as categoriaNombre, 
-             e.nombre as estadoNombre 
+             e.nombre as estadoNombre,
+             u.nombre as tecnicoNombre,
+             creador.rol_id as rolCreadorId
       FROM incidencias i
       LEFT JOIN categorias c ON i.categoria_id = c.id
       LEFT JOIN estados e ON i.estado_id = e.id
+      LEFT JOIN usuarios u ON i.usuarioTecnico_id = u.id
+      LEFT JOIN usuarios creador ON i.usuario_id = creador.id
       ORDER BY i.fecha_creacion DESC
     `;
     const [rows] = await db.query(query);
@@ -39,8 +43,28 @@ exports.getIncidenciasByUser = async (req, res) => {
     const [rows] = await db.query(query, [userId]);
     res.json(rows);
   } catch (error) {
-    console.error('Error getIncidenciasByUser:', error);
     res.status(500).json({ message: 'Error al obtener incidencias del usuario', error: error.message });
+  }
+};
+
+exports.getIncidenciasByTechnician = async (req, res) => {
+  const { tecnicoId } = req.params;
+  try {
+    const query = `
+      SELECT i.*, 
+             DATE_FORMAT(i.fecha_creacion, '%Y-%m-%dT%H:%i:%sZ') as fecha_creacion,
+             c.nombre as categoriaNombre, 
+             e.nombre as estadoNombre 
+      FROM incidencias i
+      LEFT JOIN categorias c ON i.categoria_id = c.id
+      LEFT JOIN estados e ON i.estado_id = e.id
+      WHERE i.usuarioTecnico_id = ?
+      ORDER BY i.fecha_creacion DESC
+    `;
+    const [rows] = await db.query(query, [tecnicoId]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener incidencias del técnico', error: error.message });
   }
 };
 
@@ -69,15 +93,18 @@ exports.createIncidencia = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   const { id } = req.params;
-  const { estado_id, usuario_id } = req.body;
+  const { estado_id, usuario_id, comentario_tecnico } = req.body;
 
   try {
-    // 1. Obtener estado anterior para el historial
+    // 1. Obtener estado anterior
     const [current] = await db.query('SELECT estado_id FROM incidencias WHERE id = ?', [id]);
     const estadoPrevio = current.length > 0 ? current[0].estado_id : null;
 
-    // 2. Actualizar incidencia
-    await db.query('UPDATE incidencias SET estado_id = ? WHERE id = ?', [estado_id, id]);
+    // 2. Actualizar incidencia con comentario
+    await db.query(
+      'UPDATE incidencias SET estado_id = ?, comentario_tecnico = ? WHERE id = ?', 
+      [estado_id, comentario_tecnico || null, id]
+    );
 
     // 3. Registrar en historial
     await db.query(
@@ -85,9 +112,9 @@ exports.updateStatus = async (req, res) => {
       [id, estadoPrevio, estado_id, usuario_id]
     );
 
-    res.json({ message: 'Estado actualizado e historial registrado' });
+    res.json({ message: 'Estado y comentario actualizados' });
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar el estado', error });
+    res.status(500).json({ message: 'Error al actualizar el estado', error: error.message });
   }
 };
 
@@ -162,5 +189,23 @@ exports.deleteIncidencia = async (req, res) => {
   } catch (error) {
     console.error('Error al borrar incidencia:', error);
     res.status(500).json({ message: 'Error al borrar la incidencia', error: error.message });
+  }
+};
+
+exports.getCategorias = async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM categorias ORDER BY nombre ASC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener categorías', error: error.message });
+  }
+};
+
+exports.getEstados = async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM estados ORDER BY id ASC');
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener estados', error: error.message });
   }
 };

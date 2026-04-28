@@ -67,8 +67,13 @@ exports.login = async (req, res) => {
     }
 
     // Generar Token (incluyendo el rol numérico)
+    if (!process.env.JWT_SECRET) {
+      console.error('CRÍTICO: No se ha definido JWT_SECRET en las variables de entorno');
+      return res.status(500).json({ message: 'Error de configuración en el servidor (JWT)' });
+    }
+
     const token = jwt.sign({ id: userRow.id, rol_id: userRow.rol_id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRE
+      expiresIn: process.env.JWT_EXPIRE || '30d'
     });
 
     const user = {
