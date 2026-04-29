@@ -1,3 +1,4 @@
+import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/profile_screen.dart';
 import 'dart:ui';
 import 'package:ayuntamiento_incidencias/src/features/admin/presentation/admin_controller.dart';
@@ -123,19 +124,27 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
-                    _FilterChip(label: 'Todas', isSelected: widget.filterStatusId == null, onSelected: () => widget.onFilterChanged(null)),
+                    _FilterChip(
+                      label: 'Todas', 
+                      isSelected: widget.filterStatusId == null, 
+                      onSelected: () => widget.onFilterChanged(null)
+                    ),
                     const SizedBox(width: 8),
-                    _FilterChip(label: 'Abiertas', isSelected: widget.filterStatusId == 1, onSelected: () => widget.onFilterChanged(1), color: Colors.orange),
-                    const SizedBox(width: 8),
-                    _FilterChip(label: 'En Proceso', isSelected: widget.filterStatusId == 2, onSelected: () => widget.onFilterChanged(2), color: Colors.blue),
-                    const SizedBox(width: 8),
-                    _FilterChip(label: 'Resueltas', isSelected: widget.filterStatusId == 3, onSelected: () => widget.onFilterChanged(3), color: Colors.green),
-                    const SizedBox(width: 8),
-                    _FilterChip(label: 'No Resuelta', isSelected: widget.filterStatusId == 4, onSelected: () => widget.onFilterChanged(4), color: Colors.orange[800]),
-                    const SizedBox(width: 8),
-                    _FilterChip(label: 'Error', isSelected: widget.filterStatusId == 5, onSelected: () => widget.onFilterChanged(5), color: Colors.redAccent),
+                    ...ref.watch(estadosProvider).when(
+                      data: (estados) => estados.map((e) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _FilterChip(
+                          label: e.nombre,
+                          isSelected: widget.filterStatusId == e.id,
+                          onSelected: () => widget.onFilterChanged(e.id),
+                          color: _getStatusColor(e.id),
+                        ),
+                      )).toList(),
+                      loading: () => [const CircularProgressIndicator()],
+                      error: (_, __) => [],
+                    ),
                     if (widget.dateRange != null) ...[
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 8),
                       InputChip(
                         avatar: const Icon(Icons.date_range, size: 14, color: Colors.white),
                         label: Text(
@@ -189,7 +198,7 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
               },
               icon: const Icon(Icons.clear),
             ),
-          if (widget.filterStatusId != null && widget.filterStatusId! >= 3)
+          if (widget.filterStatusId != null && widget.filterStatusId! >= 3 && ref.watch(authStateProvider)?.rolId == 3)
             IconButton(
               onPressed: () => _showBulkDeleteDialog(context, ref, widget.filterStatusId!),
               icon: const Icon(Icons.cleaning_services_outlined, color: Colors.redAccent),
@@ -264,7 +273,7 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
                           crossAxisCount: crossAxisCount,
                           crossAxisSpacing: 24,
                           mainAxisSpacing: 24,
-                          mainAxisExtent: 320,
+                          mainAxisExtent: 380,
                         ),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) => _buildCard(context, filtered[index]),
@@ -283,6 +292,17 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
         error: (e, st) => Center(child: Text('Error: $e')),
       ),
     );
+  }
+
+  Color _getStatusColor(int statusId) {
+    switch (statusId) {
+      case 1: return Colors.orange;
+      case 2: return Colors.blue;
+      case 3: return Colors.green;
+      case 4: return Colors.orange[800]!;
+      case 5: return Colors.redAccent;
+      default: return Colors.blueGrey;
+    }
   }
 
   Widget _buildCard(BuildContext context, incidencia) {
@@ -320,11 +340,19 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await ref.read(adminControllerProvider.notifier).deleteFinalIncidencias(estadoId: estadoId);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Historial de $estadoNombre limpiado')),
-                );
+              try {
+                await ref.read(adminControllerProvider.notifier).deleteFinalIncidencias(estadoId: estadoId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Historial de $estadoNombre limpiado')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                  );
+                }
               }
             },
             child: const Text('BORRAR TODO', style: TextStyle(color: Colors.red)),

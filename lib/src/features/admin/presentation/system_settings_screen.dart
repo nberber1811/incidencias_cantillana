@@ -22,33 +22,101 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
   }
 
   void _submitCategory() async {
-    if (_categoryController.text.isEmpty) return;
-    await ref.read(adminControllerProvider.notifier).createCategory(_categoryController.text);
-    _categoryController.clear();
-    ref.invalidate(categoriasProvider); // Refrescar lista
-  }
-
-  void _submitRole() async {
-    if (_roleController.text.isEmpty) return;
-    await ref.read(adminControllerProvider.notifier).createRole(_roleController.text);
-    _roleController.clear();
-    ref.invalidate(estadosProvider); // Refrescar lista
-  }
-
-  void _editCategory(int id, String currentName) async {
-    final controller = TextEditingController(text: currentName);
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Editar Categoría'),
-        content: TextField(controller: controller, autofocus: true),
+        title: const Text('Añadir Categoría'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, autofocus: true, decoration: const InputDecoration(labelText: 'Nombre *')),
+            const SizedBox(height: 8),
+            TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descripción (Opcional)')),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
           TextButton(
             onPressed: () async {
-              await ref.read(adminControllerProvider.notifier).updateCategory(id, controller.text);
-              ref.invalidate(categoriasProvider);
-              if (context.mounted) Navigator.pop(context);
+              if (nameController.text.isEmpty) return;
+              try {
+                await ref.read(adminControllerProvider.notifier).createCategory(nameController.text, descripcion: descController.text);
+                ref.invalidate(categoriasProvider);
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: const Text('GUARDAR'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _submitRole() async {
+    final nameController = TextEditingController();
+    final descController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Añadir Estado'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, autofocus: true, decoration: const InputDecoration(labelText: 'Nombre *')),
+            const SizedBox(height: 8),
+            TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descripción (Opcional)')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
+          TextButton(
+            onPressed: () async {
+              if (nameController.text.isEmpty) return;
+              try {
+                await ref.read(adminControllerProvider.notifier).createRole(nameController.text, descripcion: descController.text);
+                ref.invalidate(estadosProvider);
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: const Text('GUARDAR'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editCategory(int id, String currentName, String? currentDesc) async {
+    final nameController = TextEditingController(text: currentName);
+    final descController = TextEditingController(text: currentDesc);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Categoría'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, autofocus: true, decoration: const InputDecoration(labelText: 'Nombre')),
+            const SizedBox(height: 8),
+            TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descripción (Opcional)')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
+          TextButton(
+            onPressed: () async {
+              try {
+                await ref.read(adminControllerProvider.notifier).updateCategory(id, nameController.text, descripcion: descController.text);
+                ref.invalidate(categoriasProvider);
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
             },
             child: const Text('GUARDAR'),
           ),
@@ -85,20 +153,32 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
     }
   }
 
-  void _editRole(int id, String currentName) async {
-    final controller = TextEditingController(text: currentName);
+  void _editRole(int id, String currentName, String? currentDesc) async {
+    final nameController = TextEditingController(text: currentName);
+    final descController = TextEditingController(text: currentDesc);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Editar Estado'),
-        content: TextField(controller: controller, autofocus: true),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: nameController, autofocus: true, decoration: const InputDecoration(labelText: 'Nombre')),
+            const SizedBox(height: 8),
+            TextField(controller: descController, decoration: const InputDecoration(labelText: 'Descripción (Opcional)')),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCELAR')),
           TextButton(
             onPressed: () async {
-              await ref.read(adminControllerProvider.notifier).updateRole(id, controller.text);
-              ref.invalidate(estadosProvider);
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await ref.read(adminControllerProvider.notifier).updateRole(id, nameController.text, descripcion: descController.text);
+                ref.invalidate(estadosProvider);
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
             },
             child: const Text('GUARDAR'),
           ),
@@ -210,7 +290,7 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
                 loading: () => [],
                 error: (_, __) => [],
               ),
-              onEdit: (item) => _editCategory(item.id, item.nombre),
+              onEdit: (item) => _editCategory(item.id, item.nombre, item.descripcion),
               onDelete: (item) => _deleteCategory(item.id, item.nombre),
             ),
 
@@ -232,7 +312,7 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
                 loading: () => [],
                 error: (_, __) => [],
               ),
-              onEdit: (item) => _editRole(item.id, item.nombre),
+              onEdit: (item) => _editRole(item.id, item.nombre, item.descripcion),
               onDelete: (item) => _deleteRole(item.id, item.nombre),
             ),
             
@@ -301,32 +381,16 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      hintText: hintText,
-                      filled: true,
-                      fillColor: isDark ? Colors.black26 : Colors.grey[50],
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.all(20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: onPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Icon(Icons.add),
-                ),
-              ],
+            ElevatedButton.icon(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              icon: const Icon(Icons.add),
+              label: Text(buttonText),
             ),
             const SizedBox(height: 24),
             const Divider(),
@@ -336,15 +400,16 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: items.map((item) => Chip(
+              children: items.map((item) => InputChip(
                 label: Text(item.nombre),
                 backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
-                deleteIcon: const Icon(Icons.edit, size: 14),
-                onDeleted: () => onEdit(item),
+                deleteIcon: const Icon(Icons.close, size: 16, color: Colors.red),
+                onDeleted: () => onDelete(item),
                 avatar: GestureDetector(
-                  onTap: () => onDelete(item),
-                  child: const Icon(Icons.close, size: 14, color: Colors.redAccent),
+                  onTap: () => onEdit(item),
+                  child: Icon(Icons.edit, size: 14, color: isDark ? Colors.white70 : Colors.black54),
                 ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               )).toList(),
             ),
           ],

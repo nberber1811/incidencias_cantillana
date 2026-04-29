@@ -23,7 +23,7 @@ class IncidenciaCard extends ConsumerWidget {
       case 3: return Colors.green;
       case 4: return Colors.orange[800]!;
       case 5: return Colors.redAccent;
-      default: return Colors.grey;
+      default: return Colors.blueGrey;
     }
   }
 
@@ -103,44 +103,46 @@ class IncidenciaCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(incidencia.estadoId).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _getStatusText(incidencia.estadoNombre).toUpperCase(),
-                              style: TextStyle(
-                                color: _getStatusColor(incidencia.estadoId),
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          if (isTechnicianReport)
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.blue[900]?.withOpacity(0.1),
+                                color: _getStatusColor(incidencia.estadoId).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue[900]!, width: 1),
                               ),
                               child: Text(
-                                'REPORTE TÉCNICO',
+                                _getStatusText(incidencia.estadoNombre).toUpperCase(),
                                 style: TextStyle(
-                                  color: Colors.blue[900],
+                                  color: _getStatusColor(incidencia.estadoId),
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                        ],
+                            if (isTechnicianReport)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[900]?.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.blue[900]!, width: 1),
+                                ),
+                                child: Text(
+                                  'REPORTE TÉCNICO',
+                                  style: TextStyle(
+                                    color: Colors.blue[900],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
                       if (incidencia.estadoId == 1 && isOwner) ...[
                         IconButton(
                           visualDensity: VisualDensity.compact,
@@ -156,7 +158,7 @@ class IncidenciaCard extends ConsumerWidget {
                           tooltip: 'Editar incidencia',
                         ),
                       ],
-                      if ((incidencia.estadoId == 1 && isOwner) || (isFinalState && isAdminOrTech)) ...[
+                      if ((isOwner && (incidencia.estadoId == 1 || isFinalState)) || (isAdminOrTech && isFinalState)) ...[
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           onPressed: () => _showDeleteDialog(context, ref),

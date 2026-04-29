@@ -1,0 +1,382 @@
+diff --git a/android/app/src/main/AndroidManifest.xml b/android/app/src/main/AndroidManifest.xml
+index 25b9235..6ea1443 100644
+--- a/android/app/src/main/AndroidManifest.xml
++++ b/android/app/src/main/AndroidManifest.xml
+@@ -3,7 +3,8 @@
+     <application
+         android:label="ayuntamiento_incidencias"
+         android:name="${applicationName}"
+-        android:icon="@mipmap/launcher_icon">
++        android:icon="@mipmap/launcher_icon"
++        android:usesCleartextTraffic="true">
+         <activity
+             android:name=".MainActivity"
+             android:exported="true"
+diff --git a/cosas.txt b/cosas.txt
+index 49b34dc..0b6e269 100644
+--- a/cosas.txt
++++ b/cosas.txt
+@@ -1,5 +1,4 @@
+ Hacer el historial de cambios de estados en la tabla
+-Que el admin pueda crear categorias y roles
+ Email verificación
+ Se me olvidó la contraseña -> botón para recuperarla al correo
+ Hacer registro con google
+\ No newline at end of file
+diff --git a/ios/Runner/Info.plist b/ios/Runner/Info.plist
+index d9b1b15..f79bd39 100644
+--- a/ios/Runner/Info.plist
++++ b/ios/Runner/Info.plist
+@@ -66,5 +66,10 @@
+ 		<string>UIInterfaceOrientationLandscapeLeft</string>
+ 		<string>UIInterfaceOrientationLandscapeRight</string>
+ 	</array>
++	<key>NSAppTransportSecurity</key>
++	<dict>
++		<key>NSAllowsArbitraryLoads</key>
++		<true/>
++	</dict>
+ </dict>
+ </plist>
+diff --git a/lib/src/features/admin/data/admin_repository.dart b/lib/src/features/admin/data/admin_repository.dart
+index a6b14b2..8471638 100644
+--- a/lib/src/features/admin/data/admin_repository.dart
++++ b/lib/src/features/admin/data/admin_repository.dart
+@@ -13,7 +13,7 @@ class AdminRepository {
+     ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
+         ? 'http://localhost:3000/api/admin'
+         : '${Uri.base.scheme}://${Uri.base.host}/api/admin')
+-    : 'http://alumno23.fpcantillana.org/api/admin';
++    : 'https://alumno23.fpcantillana.org/api/admin';
+ 
+   Future<String?> _getToken() async {
+     final prefs = await SharedPreferences.getInstance();
+@@ -132,8 +132,14 @@ class AdminRepository {
+       headers: await _headers(),
+     );
+     if (response.statusCode != 200) {
+-      final error = json.decode(response.body);
+-      throw Exception(error['message'] ?? 'Error al eliminar categoría');
++      String detail = 'Error al eliminar categoría';
++      try {
++        final error = json.decode(response.body);
++        detail = error['message'] ?? detail;
++      } catch (e) {
++        detail = 'Error del servidor (HTML): ${response.statusCode}';
++      }
++      throw Exception(detail);
+     }
+   }
+ 
+@@ -156,8 +162,14 @@ class AdminRepository {
+       headers: await _headers(),
+     );
+     if (response.statusCode != 200) {
+-      final error = json.decode(response.body);
+-      throw Exception(error['message'] ?? 'Error al eliminar rol/estado');
++      String detail = 'Error al eliminar rol/estado';
++      try {
++        final error = json.decode(response.body);
++        detail = error['message'] ?? detail;
++      } catch (e) {
++        detail = 'Error del servidor (HTML): ${response.statusCode}';
++      }
++      throw Exception(detail);
+     }
+   }
+ }
+diff --git a/lib/src/features/admin/presentation/admin_home_screen.dart b/lib/src/features/admin/presentation/admin_home_screen.dart
+index d7ce455..cf16366 100644
+--- a/lib/src/features/admin/presentation/admin_home_screen.dart
++++ b/lib/src/features/admin/presentation/admin_home_screen.dart
+@@ -123,19 +123,27 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 child: Row(
+                   children: [
+-                    _FilterChip(label: 'Todas', isSelected: widget.filterStatusId == null, onSelected: () => widget.onFilterChanged(null)),
++                    _FilterChip(
++                      label: 'Todas', 
++                      isSelected: widget.filterStatusId == null, 
++                      onSelected: () => widget.onFilterChanged(null)
++                    ),
+                     const SizedBox(width: 8),
+-                    _FilterChip(label: 'Abiertas', isSelected: widget.filterStatusId == 1, onSelected: () => widget.onFilterChanged(1), color: Colors.orange),
+-                    const SizedBox(width: 8),
+-                    _FilterChip(label: 'En Proceso', isSelected: widget.filterStatusId == 2, onSelected: () => widget.onFilterChanged(2), color: Colors.blue),
+-                    const SizedBox(width: 8),
+-                    _FilterChip(label: 'Resueltas', isSelected: widget.filterStatusId == 3, onSelected: () => widget.onFilterChanged(3), color: Colors.green),
+-                    const SizedBox(width: 8),
+-                    _FilterChip(label: 'No Resuelta', isSelected: widget.filterStatusId == 4, onSelected: () => widget.onFilterChanged(4), color: Colors.orange[800]),
+-                    const SizedBox(width: 8),
+-                    _FilterChip(label: 'Error', isSelected: widget.filterStatusId == 5, onSelected: () => widget.onFilterChanged(5), color: Colors.redAccent),
++                    ...ref.watch(estadosProvider).when(
++                      data: (estados) => estados.map((e) => Padding(
++                        padding: const EdgeInsets.only(right: 8),
++                        child: _FilterChip(
++                          label: e.nombre,
++                          isSelected: widget.filterStatusId == e.id,
++                          onSelected: () => widget.onFilterChanged(e.id),
++                          color: _getStatusColor(e.id),
++                        ),
++                      )).toList(),
++                      loading: () => [const CircularProgressIndicator()],
++                      error: (_, __) => [],
++                    ),
+                     if (widget.dateRange != null) ...[
+-                      const SizedBox(width: 16),
++                      const SizedBox(width: 8),
+                       InputChip(
+                         avatar: const Icon(Icons.date_range, size: 14, color: Colors.white),
+                         label: Text(
+@@ -285,6 +293,17 @@ class _AdminIncidenciasViewState extends ConsumerState<_AdminIncidenciasView> {
+     );
+   }
+ 
++  Color _getStatusColor(int statusId) {
++    switch (statusId) {
++      case 1: return Colors.orange;
++      case 2: return Colors.blue;
++      case 3: return Colors.green;
++      case 4: return Colors.orange[800]!;
++      case 5: return Colors.redAccent;
++      default: return Colors.blueGrey;
++    }
++  }
++
+   Widget _buildCard(BuildContext context, incidencia) {
+     return IncidenciaCard(
+       incidencia: incidencia,
+diff --git a/lib/src/features/admin/presentation/admin_incidencia_detail_screen.dart b/lib/src/features/admin/presentation/admin_incidencia_detail_screen.dart
+index 30fe615..70dcb27 100644
+--- a/lib/src/features/admin/presentation/admin_incidencia_detail_screen.dart
++++ b/lib/src/features/admin/presentation/admin_incidencia_detail_screen.dart
+@@ -200,46 +200,20 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
+               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+             ),
+             const SizedBox(height: 16),
+-            Wrap(
+-              spacing: 8,
+-              runSpacing: 8,
+-              children: [
+-                _StatusButton(
+-                  statusId: 1,
+-                  currentStatusId: widget.incidencia.estadoId,
+-                  label: 'Abierta',
+-                  color: Colors.grey,
+-                  onPressed: () => _updateStatus(1),
+-                ),
+-                _StatusButton(
+-                  statusId: 2,
+-                  currentStatusId: widget.incidencia.estadoId,
+-                  label: 'En Proceso',
+-                  color: Colors.blue,
+-                  onPressed: () => _updateStatus(2),
+-                ),
+-                _StatusButton(
+-                  statusId: 3,
+-                  currentStatusId: widget.incidencia.estadoId,
+-                  label: 'Resuelta',
+-                  color: Colors.green,
+-                  onPressed: () => _updateStatus(3),
+-                ),
+-                _StatusButton(
+-                  statusId: 4,
++            ref.watch(estadosProvider).when(
++              data: (estados) => Wrap(
++                spacing: 8,
++                runSpacing: 8,
++                children: estados.map((e) => _StatusButton(
++                  statusId: e.id,
+                   currentStatusId: widget.incidencia.estadoId,
+-                  label: 'No Resuelta',
+-                  color: Colors.orange[800]!,
+-                  onPressed: () => _updateStatus(4),
+-                ),
+-                _StatusButton(
+-                  statusId: 5,
+-                  currentStatusId: widget.incidencia.estadoId,
+-                  label: 'Error',
+-                  color: Colors.redAccent,
+-                  onPressed: () => _updateStatus(5),
+-                ),
+-              ],
++                  label: e.nombre,
++                  color: _getStatusColor(e.id),
++                  onPressed: () => _updateStatus(e.id),
++                )).toList(),
++              ),
++              loading: () => const Center(child: CircularProgressIndicator()),
++              error: (e, st) => Text('Error al cargar estados: $e'),
+             ),
+           ],
+         ),
+@@ -251,6 +225,17 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
+ );
+   }
+ 
++  Color _getStatusColor(int statusId) {
++    switch (statusId) {
++      case 1: return Colors.orange;
++      case 2: return Colors.blue;
++      case 3: return Colors.green;
++      case 4: return Colors.orange[800]!;
++      case 5: return Colors.redAccent;
++      default: return Colors.blueGrey;
++    }
++  }
++
+   Future<void> _updateStatus(int estadoId) async {
+     final currentUser = ref.read(authStateProvider);
+     if (currentUser == null) return;
+diff --git a/lib/src/features/admin/presentation/system_settings_screen.dart b/lib/src/features/admin/presentation/system_settings_screen.dart
+index 973c944..07abf3a 100644
+--- a/lib/src/features/admin/presentation/system_settings_screen.dart
++++ b/lib/src/features/admin/presentation/system_settings_screen.dart
+@@ -336,15 +336,16 @@ class _SystemSettingsScreenState extends ConsumerState<SystemSettingsScreen> {
+             Wrap(
+               spacing: 8,
+               runSpacing: 8,
+-              children: items.map((item) => Chip(
++              children: items.map((item) => InputChip(
+                 label: Text(item.nombre),
+                 backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
+-                deleteIcon: const Icon(Icons.edit, size: 14),
+-                onDeleted: () => onEdit(item),
++                deleteIcon: const Icon(Icons.close, size: 16, color: Colors.red),
++                onDeleted: () => onDelete(item),
+                 avatar: GestureDetector(
+-                  onTap: () => onDelete(item),
+-                  child: const Icon(Icons.close, size: 14, color: Colors.redAccent),
++                  onTap: () => onEdit(item),
++                  child: Icon(Icons.edit, size: 14, color: isDark ? Colors.white70 : Colors.black54),
+                 ),
++                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+               )).toList(),
+             ),
+           ],
+diff --git a/lib/src/features/auth/data/auth_repository.dart b/lib/src/features/auth/data/auth_repository.dart
+index 7acabc5..724dc3c 100644
+--- a/lib/src/features/auth/data/auth_repository.dart
++++ b/lib/src/features/auth/data/auth_repository.dart
+@@ -42,8 +42,13 @@ class AuthRepository {
+       await persistUser(user);
+       return user;
+     } else {
+-      final data = json.decode(response.body);
+-      final detail = data['error_detalle'] ?? data['message'] ?? 'Error desconocido';
++      String detail = 'Error desconocido';
++      try {
++        final data = json.decode(response.body);
++        detail = data['error_detalle'] ?? data['message'] ?? detail;
++      } catch (e) {
++        detail = 'Error del servidor (HTML): ${response.statusCode}';
++      }
+       throw Exception(detail);
+     }
+   }
+@@ -69,8 +74,14 @@ class AuthRepository {
+       await persistUser(user);
+       return user;
+     } else {
+-      final data = json.decode(response.body);
+-      throw Exception(data['message'] ?? 'Error al iniciar sesión');
++      String detail = 'Error al iniciar sesión';
++      try {
++        final data = json.decode(response.body);
++        detail = data['message'] ?? detail;
++      } catch (e) {
++        detail = 'Error de conexión con el servidor (HTML)';
++      }
++      throw Exception(detail);
+     }
+   }
+ 
+diff --git a/lib/src/features/incidencias/data/incidencia_repository.dart b/lib/src/features/incidencias/data/incidencia_repository.dart
+index 820bd9a..9573e26 100644
+--- a/lib/src/features/incidencias/data/incidencia_repository.dart
++++ b/lib/src/features/incidencias/data/incidencia_repository.dart
+@@ -38,7 +38,7 @@ class IncidenciaRepository {
+     ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
+         ? 'http://localhost:3000/api/incidencias'
+         : '${Uri.base.scheme}://${Uri.base.host}/api/incidencias')
+-    : 'http://alumno23.fpcantillana.org/api/incidencias';
++    : 'https://alumno23.fpcantillana.org/api/incidencias';
+ 
+   IncidenciaRepository();
+ 
+@@ -47,8 +47,12 @@ class IncidenciaRepository {
+       try {
+         final response = await http.get(Uri.parse('$baseUrl/user/$userId'));
+         if (response.statusCode == 200) {
+-          final List<dynamic> data = json.decode(response.body);
+-          yield data.map((item) => Incidencia.fromJson(item)).toList();
++          try {
++            final List<dynamic> data = json.decode(response.body);
++            yield data.map((item) => Incidencia.fromJson(item)).toList();
++          } catch (e) {
++            yield [];
++          }
+         } else {
+           // Si el servidor falla, devolvemos lista vacía para quitar el spinner
+           yield [];
+@@ -66,8 +70,12 @@ class IncidenciaRepository {
+       try {
+         final response = await http.get(Uri.parse('$baseUrl/technician/$tecnicoId'));
+         if (response.statusCode == 200) {
+-          final List<dynamic> data = json.decode(response.body);
+-          yield data.map((item) => Incidencia.fromJson(item)).toList();
++          try {
++            final List<dynamic> data = json.decode(response.body);
++            yield data.map((item) => Incidencia.fromJson(item)).toList();
++          } catch (e) {
++            yield [];
++          }
+         } else {
+           yield [];
+         }
+@@ -84,9 +92,14 @@ class IncidenciaRepository {
+         debugPrint("DEBUG: Cargando todas las incidencias...");
+         final response = await http.get(Uri.parse(baseUrl));
+         if (response.statusCode == 200) {
+-          final List<dynamic> data = json.decode(response.body);
+-          debugPrint("DEBUG: Incidencias recibidas: ${data.length}");
+-          yield data.map((item) => Incidencia.fromJson(item)).toList();
++          try {
++            final List<dynamic> data = json.decode(response.body);
++            debugPrint("DEBUG: Incidencias recibidas: ${data.length}");
++            yield data.map((item) => Incidencia.fromJson(item)).toList();
++          } catch (e) {
++            debugPrint("DEBUG: Error decodificando todas las incidencias: $e");
++            yield [];
++          }
+         } else {
+           debugPrint("DEBUG: Error servidor: ${response.statusCode}");
+           yield [];
+@@ -117,8 +130,12 @@ class IncidenciaRepository {
+     final response = await http.Response.fromStream(streamedResponse);
+     
+     if (response.statusCode == 200) {
+-      final data = json.decode(response.body);
+-      return data['url']; // Devolver el nombre del archivo
++      try {
++        final data = json.decode(response.body);
++        return data['url']; // Devolver el nombre del archivo
++      } catch (e) {
++        throw Exception('Error en respuesta del servidor al subir imagen');
++      }
+     } else {
+       throw Exception('Failed to upload image');
+     }
+diff --git a/lib/src/shared/widgets/incidencia_card.dart b/lib/src/shared/widgets/incidencia_card.dart
+index bd4fc5d..7fd61e7 100644
+--- a/lib/src/shared/widgets/incidencia_card.dart
++++ b/lib/src/shared/widgets/incidencia_card.dart
+@@ -23,7 +23,7 @@ class IncidenciaCard extends ConsumerWidget {
+       case 3: return Colors.green;
+       case 4: return Colors.orange[800]!;
+       case 5: return Colors.redAccent;
+-      default: return Colors.grey;
++      default: return Colors.blueGrey;
+     }
+   }
+ 

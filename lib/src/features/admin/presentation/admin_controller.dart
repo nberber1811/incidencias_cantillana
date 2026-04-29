@@ -26,6 +26,7 @@ class AdminController extends StateNotifier<AsyncValue<void>> {
   Future<void> changeUserRole(String uid, int newRolId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _repository.updateUserRole(uid, newRolId));
+    if (state.hasError) throw state.error!;
     // Refrescamos la lista de usuarios tras el cambio
     _ref.invalidate(allUsersProvider);
   }
@@ -33,41 +34,49 @@ class AdminController extends StateNotifier<AsyncValue<void>> {
   Future<void> assignTechnician(int incidenciaId, String tecnicoId) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _repository.assignIncidencia(incidenciaId, tecnicoId));
+    if (state.hasError) throw state.error!;
     // Nota: Aquí se podría invalidar el stream de incidencias si es necesario
   }
 
   Future<void> deleteFinalIncidencias({int? estadoId}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _repository.deleteFinalIncidencias(estadoId: estadoId));
+    if (state.hasError) throw state.error!;
   }
 
-  Future<void> createCategory(String nombre) async {
+  Future<void> createCategory(String nombre, {String? descripcion}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repository.addCategory(nombre));
+    state = await AsyncValue.guard(() => _repository.addCategory(nombre, descripcion: descripcion));
+    if (state.hasError) throw state.error!;
   }
 
-  Future<void> createRole(String nombre) async {
+  Future<void> createRole(String nombre, {String? descripcion}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repository.addRole(nombre));
+    state = await AsyncValue.guard(() => _repository.addRole(nombre, descripcion: descripcion));
+    if (state.hasError) throw state.error!;
   }
 
-  Future<void> updateCategory(int id, String nombre) async {
+  Future<void> updateCategory(int id, String nombre, {String? descripcion}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repository.updateCategory(id, nombre));
+    state = await AsyncValue.guard(() => _repository.updateCategory(id, nombre, descripcion: descripcion));
+    if (state.hasError) throw state.error!;
   }
 
   Future<void> deleteCategory(int id) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _repository.deleteCategory(id));
+    if (state.hasError) throw state.error!;
   }
 
-  Future<void> updateRole(int id, String nombre) async {
+  Future<void> updateRole(int id, String nombre, {String? descripcion}) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repository.updateRole(id, nombre));
+    state = await AsyncValue.guard(() => _repository.updateRole(id, nombre, descripcion: descripcion));
+    if (state.hasError) throw state.error!;
   }
 
   Future<void> deleteRole(int id) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _repository.deleteRole(id));
+    if (state.hasError) throw state.error!;
   }
 }

@@ -34,11 +34,7 @@ final estadosProvider = FutureProvider<List<dynamic>>((ref) async {
 class IncidenciaRepository {
   // Base URL of the new API
   // Base URL of the new Node.js API
-  final String baseUrl = kIsWeb 
-    ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
-        ? 'http://localhost:3000/api/incidencias'
-        : '${Uri.base.scheme}://${Uri.base.host}/api/incidencias')
-    : 'http://alumno23.fpcantillana.org/api/incidencias';
+  final String baseUrl = 'https://alumno23.fpcantillana.org/api/incidencias';
 
   IncidenciaRepository();
 
@@ -47,8 +43,12 @@ class IncidenciaRepository {
       try {
         final response = await http.get(Uri.parse('$baseUrl/user/$userId'));
         if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          yield data.map((item) => Incidencia.fromJson(item)).toList();
+          try {
+            final List<dynamic> data = json.decode(response.body);
+            yield data.map((item) => Incidencia.fromJson(item)).toList();
+          } catch (e) {
+            yield [];
+          }
         } else {
           // Si el servidor falla, devolvemos lista vacía para quitar el spinner
           yield [];
@@ -66,8 +66,12 @@ class IncidenciaRepository {
       try {
         final response = await http.get(Uri.parse('$baseUrl/technician/$tecnicoId'));
         if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          yield data.map((item) => Incidencia.fromJson(item)).toList();
+          try {
+            final List<dynamic> data = json.decode(response.body);
+            yield data.map((item) => Incidencia.fromJson(item)).toList();
+          } catch (e) {
+            yield [];
+          }
         } else {
           yield [];
         }
@@ -84,9 +88,14 @@ class IncidenciaRepository {
         debugPrint("DEBUG: Cargando todas las incidencias...");
         final response = await http.get(Uri.parse(baseUrl));
         if (response.statusCode == 200) {
-          final List<dynamic> data = json.decode(response.body);
-          debugPrint("DEBUG: Incidencias recibidas: ${data.length}");
-          yield data.map((item) => Incidencia.fromJson(item)).toList();
+          try {
+            final List<dynamic> data = json.decode(response.body);
+            debugPrint("DEBUG: Incidencias recibidas: ${data.length}");
+            yield data.map((item) => Incidencia.fromJson(item)).toList();
+          } catch (e) {
+            debugPrint("DEBUG: Error decodificando todas las incidencias: $e");
+            yield [];
+          }
         } else {
           debugPrint("DEBUG: Error servidor: ${response.statusCode}");
           yield [];
@@ -117,8 +126,12 @@ class IncidenciaRepository {
     final response = await http.Response.fromStream(streamedResponse);
     
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return data['url']; // Devolver el nombre del archivo
+      try {
+        final data = json.decode(response.body);
+        return data['url']; // Devolver el nombre del archivo
+      } catch (e) {
+        throw Exception('Error en respuesta del servidor al subir imagen');
+      }
     } else {
       throw Exception('Failed to upload image');
     }
@@ -199,13 +212,15 @@ class IncidenciaRepository {
 class LookupItem {
   final int id;
   final String nombre;
+  final String? descripcion;
 
-  LookupItem({required this.id, required this.nombre});
+  LookupItem({required this.id, required this.nombre, this.descripcion});
 
   factory LookupItem.fromJson(Map<String, dynamic> json) {
     return LookupItem(
       id: json['id'],
       nombre: json['nombre'],
+      descripcion: json['descripcion'],
     );
   }
 }

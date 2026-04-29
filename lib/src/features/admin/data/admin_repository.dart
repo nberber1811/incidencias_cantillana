@@ -9,11 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 final adminRepositoryProvider = Provider((ref) => AdminRepository());
 
 class AdminRepository {
-  final String baseUrl = kIsWeb 
-    ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
-        ? 'http://localhost:3000/api/admin'
-        : '${Uri.base.scheme}://${Uri.base.host}/api/admin')
-    : 'http://alumno23.fpcantillana.org/api/admin';
+  final String baseUrl = 'https://alumno23.fpcantillana.org/api/admin';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -90,11 +86,11 @@ class AdminRepository {
   }
 
   // Crear categoría
-  Future<void> addCategory(String nombre) async {
+  Future<void> addCategory(String nombre, {String? descripcion}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/categories'),
       headers: await _headers(),
-      body: json.encode({'nombre': nombre}),
+      body: json.encode({'nombre': nombre, 'descripcion': descripcion}),
     );
     if (response.statusCode != 201) {
       throw Exception('Error al crear categoría: ${response.body}');
@@ -102,11 +98,11 @@ class AdminRepository {
   }
 
   // Crear rol (estado)
-  Future<void> addRole(String nombre) async {
+  Future<void> addRole(String nombre, {String? descripcion}) async {
     final response = await http.post(
       Uri.parse('$baseUrl/roles'),
       headers: await _headers(),
-      body: json.encode({'nombre': nombre}),
+      body: json.encode({'nombre': nombre, 'descripcion': descripcion}),
     );
     if (response.statusCode != 201) {
       throw Exception('Error al crear rol/estado: ${response.body}');
@@ -114,11 +110,11 @@ class AdminRepository {
   }
 
   // Actualizar categoría
-  Future<void> updateCategory(int id, String nombre) async {
+  Future<void> updateCategory(int id, String nombre, {String? descripcion}) async {
     final response = await http.put(
       Uri.parse('$baseUrl/categories/$id'),
       headers: await _headers(),
-      body: json.encode({'nombre': nombre}),
+      body: json.encode({'nombre': nombre, 'descripcion': descripcion}),
     );
     if (response.statusCode != 200) {
       throw Exception('Error al actualizar categoría: ${response.body}');
@@ -132,17 +128,23 @@ class AdminRepository {
       headers: await _headers(),
     );
     if (response.statusCode != 200) {
-      final error = json.decode(response.body);
-      throw Exception(error['message'] ?? 'Error al eliminar categoría');
+      String detail = 'Error al eliminar categoría';
+      try {
+        final error = json.decode(response.body);
+        detail = error['message'] ?? detail;
+      } catch (e) {
+        detail = 'Error del servidor (HTML): ${response.statusCode}';
+      }
+      throw Exception(detail);
     }
   }
 
   // Actualizar rol/estado
-  Future<void> updateRole(int id, String nombre) async {
+  Future<void> updateRole(int id, String nombre, {String? descripcion}) async {
     final response = await http.put(
       Uri.parse('$baseUrl/roles/$id'),
       headers: await _headers(),
-      body: json.encode({'nombre': nombre}),
+      body: json.encode({'nombre': nombre, 'descripcion': descripcion}),
     );
     if (response.statusCode != 200) {
       throw Exception('Error al actualizar rol/estado: ${response.body}');
@@ -156,8 +158,14 @@ class AdminRepository {
       headers: await _headers(),
     );
     if (response.statusCode != 200) {
-      final error = json.decode(response.body);
-      throw Exception(error['message'] ?? 'Error al eliminar rol/estado');
+      String detail = 'Error al eliminar rol/estado';
+      try {
+        final error = json.decode(response.body);
+        detail = error['message'] ?? detail;
+      } catch (e) {
+        detail = 'Error del servidor (HTML): ${response.statusCode}';
+      }
+      throw Exception(detail);
     }
   }
 }

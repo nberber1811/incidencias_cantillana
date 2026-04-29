@@ -84,6 +84,13 @@ exports.createIncidencia = async (req, res) => {
       'INSERT INTO incidencias (usuario_id, titulo, descripcion, categoria_id, latitud, longitud, direccion, image, estado_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [usuario_id, titulo, descripcion, categoria_id || null, latitud, longitud, direccion, image, 1] // 1 = abierta
     );
+
+    // Registrar en historial la creación de la incidencia
+    await db.query(
+      'INSERT INTO historial_estados (incidencia_id, estado_anterior, estado_nuevo, usuario_id) VALUES (?, NULL, ?, ?)',
+      [result.insertId, 1, usuario_id]
+    );
+
     res.status(201).json({ id: result.insertId, message: 'Incidencia creada con éxito' });
   } catch (error) {
     console.error('Error al crear incidencia:', error);
@@ -106,11 +113,13 @@ exports.updateStatus = async (req, res) => {
       [estado_id, comentario_tecnico || null, id]
     );
 
-    // 3. Registrar en historial
-    await db.query(
-      'INSERT INTO historial_estados (incidencia_id, estado_anterior, estado_nuevo, usuario_id) VALUES (?, ?, ?, ?)',
-      [id, estadoPrevio, estado_id, usuario_id]
-    );
+    // 3. Registrar en historial solo si el estado ha cambiado
+    if (Number(estadoPrevio) !== Number(estado_id)) {
+      await db.query(
+        'INSERT INTO historial_estados (incidencia_id, estado_anterior, estado_nuevo, usuario_id) VALUES (?, ?, ?, ?)',
+        [id, estadoPrevio, estado_id, usuario_id]
+      );
+    }
 
     res.json({ message: 'Estado y comentario actualizados' });
   } catch (error) {
@@ -168,11 +177,14 @@ exports.deleteIncidencia = async (req, res) => {
       return res.status(404).json({ message: 'Incidencia no encontrada' });
     }
 
-    if (rows[0].estado_id !== 1) {
-      return res.status(403).json({ message: 'Solo se pueden borrar incidencias en estado abierto' });
+    if (![1, 3, 4, 5].includes(rows[0].estado_id)) {
+      return res.status(403).json({ message: 'Solo se pueden borrar incidencias abiertas o ya finalizadas' });
     }
 
     const imageName = rows[0].image;
+
+    // 1.5 Borrar historial de estados para evitar error de clave foránea
+    await db.query('DELETE FROM historial_estados WHERE incidencia_id = ?', [id]);
 
     // 2. Borrar incidencia de la DB
     await db.query('DELETE FROM incidencias WHERE id = ?', [id]);

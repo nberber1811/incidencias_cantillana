@@ -200,46 +200,20 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _StatusButton(
-                  statusId: 1,
+            ref.watch(estadosProvider).when(
+              data: (estados) => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: estados.map((e) => _StatusButton(
+                  statusId: e.id,
                   currentStatusId: widget.incidencia.estadoId,
-                  label: 'Abierta',
-                  color: Colors.grey,
-                  onPressed: () => _updateStatus(1),
-                ),
-                _StatusButton(
-                  statusId: 2,
-                  currentStatusId: widget.incidencia.estadoId,
-                  label: 'En Proceso',
-                  color: Colors.blue,
-                  onPressed: () => _updateStatus(2),
-                ),
-                _StatusButton(
-                  statusId: 3,
-                  currentStatusId: widget.incidencia.estadoId,
-                  label: 'Resuelta',
-                  color: Colors.green,
-                  onPressed: () => _updateStatus(3),
-                ),
-                _StatusButton(
-                  statusId: 4,
-                  currentStatusId: widget.incidencia.estadoId,
-                  label: 'No Resuelta',
-                  color: Colors.orange[800]!,
-                  onPressed: () => _updateStatus(4),
-                ),
-                _StatusButton(
-                  statusId: 5,
-                  currentStatusId: widget.incidencia.estadoId,
-                  label: 'Error',
-                  color: Colors.redAccent,
-                  onPressed: () => _updateStatus(5),
-                ),
-              ],
+                  label: e.nombre,
+                  color: _getStatusColor(e.id),
+                  onPressed: () => _updateStatus(e.id),
+                )).toList(),
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, st) => Text('Error al cargar estados: $e'),
             ),
           ],
         ),
@@ -249,6 +223,17 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
 },
 ),
 );
+  }
+
+  Color _getStatusColor(int statusId) {
+    switch (statusId) {
+      case 1: return Colors.orange;
+      case 2: return Colors.blue;
+      case 3: return Colors.green;
+      case 4: return Colors.orange[800]!;
+      case 5: return Colors.redAccent;
+      default: return Colors.blueGrey;
+    }
   }
 
   Future<void> _updateStatus(int estadoId) async {

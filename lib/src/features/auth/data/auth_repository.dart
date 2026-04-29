@@ -13,11 +13,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 final authStateProvider = StateProvider<AppUser?>((ref) => null);
 
 class AuthRepository {
-  final String baseUrl = kIsWeb 
-    ? ((Uri.base.host == 'localhost' || Uri.base.host == '127.0.0.1')
-        ? 'http://localhost:3000/api/auth'
-        : '${Uri.base.scheme}://${Uri.base.host}/api/auth')
-    : 'http://alumno23.fpcantillana.org/api/auth';
+  final String baseUrl = 'https://alumno23.fpcantillana.org/api/auth';
 
   AuthRepository();
 

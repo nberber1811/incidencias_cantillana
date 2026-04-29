@@ -131,18 +131,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             );
           }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final incidencia = filtered[index];
-              return IncidenciaCard(
-                incidencia: incidencia,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => IncidenciaDetailScreen(incidencia: incidencia),
-                  ),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth > 900;
+              final isTablet = constraints.maxWidth > 600 && constraints.maxWidth <= 900;
+              int crossAxisCount = isDesktop ? 3 : (isTablet ? 2 : 1);
+
+              return Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: crossAxisCount > 1 
+                    ? GridView.builder(
+                        padding: const EdgeInsets.all(24),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 24,
+                          mainAxisExtent: 380,
+                        ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) => _buildCard(context, filtered[index]),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) => _buildCard(context, filtered[index]),
+                      ),
                 ),
               );
             },
@@ -160,6 +174,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         label: const Text('Nueva Incidencia'),
         icon: const Icon(Icons.add_a_photo_outlined),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, incidencia) {
+    return IncidenciaCard(
+      incidencia: incidencia,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => IncidenciaDetailScreen(incidencia: incidencia),
+        ),
       ),
     );
   }
