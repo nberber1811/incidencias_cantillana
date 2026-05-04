@@ -1,7 +1,9 @@
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/register_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -112,6 +114,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : const Text('Entrar'),
                     ),
                     const SizedBox(height: 24),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('O continuar con'),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: state.isLoading 
+                          ? null 
+                          : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
+                      icon: Image.network(
+                        'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                        height: 24,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24),
+                      ),
+                      label: const Text('Entrar con Google'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey[300]!),
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     TextButton(
                       onPressed: () {

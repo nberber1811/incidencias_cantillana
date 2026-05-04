@@ -1,3 +1,2 @@
-Email verificación
+Email verificación - nodemailer
 Se me olvidó la contraseña -> botón para recuperarla al correo
-Hacer registro con google

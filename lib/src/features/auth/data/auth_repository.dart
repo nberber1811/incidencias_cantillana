@@ -70,6 +70,32 @@ class AuthRepository {
     }
   }
 
+  Future<AppUser?> loginWithGoogle({String? idToken, String? accessToken}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/google'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'idToken': idToken,
+        'accessToken': accessToken,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final user = AppUser.fromJson(data['user']);
+      final token = data['token'];
+      
+      final prefs = await SharedPreferences.getInstance();
+      if (token != null) await prefs.setString(_tokenKey, token);
+      
+      await persistUser(user);
+      return user;
+    } else {
+      final data = json.decode(response.body);
+      throw Exception(data['message'] ?? 'Error en el inicio de sesión con Google');
+    }
+  }
+
   Future<AppUser?> updateProfile(String uid, String nombre, String telefono) async {
     final response = await http.put(
       Uri.parse('$baseUrl/profile/$uid'),
