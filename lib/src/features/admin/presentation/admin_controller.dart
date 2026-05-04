@@ -79,4 +79,18 @@ class AdminController extends StateNotifier<AsyncValue<void>> {
     state = await AsyncValue.guard(() => _repository.deleteRole(id));
     if (state.hasError) throw state.error!;
   }
+
+  Future<void> toggleBlockUser(String uid, bool bloqueado) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _repository.toggleBlockUser(uid, bloqueado));
+    if (state.hasError) throw state.error!;
+    _ref.invalidate(allUsersProvider);
+  }
+
+  Future<void> deleteUser(String uid) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => _repository.deleteUser(uid));
+    if (state.hasError) throw state.error!;
+    _ref.invalidate(allUsersProvider);
+  }
 }

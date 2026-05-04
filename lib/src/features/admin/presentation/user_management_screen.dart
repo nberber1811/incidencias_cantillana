@@ -107,15 +107,61 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
                         title: Text(user.nombre ?? 'Sin nombre', style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${user.email}\nRol: ${_getRoleName(user.rolId)}'),
                         isThreeLine: true,
-                        trailing: PopupMenuButton<int>(
+                        trailing: PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
-                          onSelected: (newRole) {
-                            ref.read(adminControllerProvider.notifier).changeUserRole(user.uid, newRole);
+                          onSelected: (action) async {
+                            if (action == 'delete') {
+                              final confirmed = await _showConfirmationDialog(
+                                context,
+                                '¿Eliminar usuario?',
+                                'Esta acción no se puede deshacer. El usuario será borrado permanentemente.',
+                                Colors.red,
+                              );
+                              if (confirmed) {
+                                try {
+                                  await ref.read(adminControllerProvider.notifier).deleteUser(user.uid);
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Usuario eliminado')));
+                                } catch (e) {
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                                }
+                              }
+                            } else if (action == 'block') {
+                              final isBlocking = !user.bloqueado;
+                              final confirmed = await _showConfirmationDialog(
+                                context,
+                                isBlocking ? '¿Bloquear usuario?' : '¿Desbloquear usuario?',
+                                isBlocking 
+                                  ? 'El usuario no podrá iniciar sesión en la aplicación.' 
+                                  : 'El usuario volverá a tener acceso a la aplicación.',
+                                isBlocking ? Colors.orange : Colors.green,
+                              );
+                              if (confirmed) {
+                                try {
+                                  await ref.read(adminControllerProvider.notifier).toggleBlockUser(user.uid, isBlocking);
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isBlocking ? 'Usuario bloqueado' : 'Usuario desbloqueado')));
+                                } catch (e) {
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+                                }
+                              }
+                            } else {
+                              // Cambiar rol
+                              final newRole = int.parse(action);
+                              ref.read(adminControllerProvider.notifier).changeUserRole(user.uid, newRole);
+                            }
                           },
                           itemBuilder: (context) => [
-                            const PopupMenuItem(value: 1, child: Text('Hacer Ciudadano')),
-                            const PopupMenuItem(value: 2, child: Text('Hacer Técnico')),
-                            const PopupMenuItem(value: 3, child: Text('Hacer Administrador')),
+                            const PopupMenuItem(value: '1', child: Text('Hacer Ciudadano')),
+                            const PopupMenuItem(value: '2', child: Text('Hacer Técnico')),
+                            const PopupMenuItem(value: '3', child: Text('Hacer Administrador')),
+                            const PopupMenuDivider(),
+                            PopupMenuItem(
+                              value: 'block', 
+                              child: Text(user.bloqueado ? 'Desbloquear Cuenta' : 'Bloquear Cuenta', style: TextStyle(color: user.bloqueado ? Colors.green : Colors.orange)),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete', 
+                              child: Text('Eliminar Cuenta', style: TextStyle(color: Colors.red)),
+                            ),
                           ],
                         ),
                       );
@@ -146,5 +192,26 @@ class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
       case 3: return Colors.red;
       default: return Colors.grey;
     }
+  }
+
+  Future<bool> _showConfirmationDialog(BuildContext context, String title, String content, Color actionColor) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: actionColor, foregroundColor: Colors.white),
+            child: const Text('CONFIRMAR'),
+          ),
+        ],
+      ),
+    ) ?? false;
   }
 }

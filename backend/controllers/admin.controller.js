@@ -4,7 +4,7 @@ const db = require('../config/db');
 exports.getAllUsers = async (req, res) => {
   try {
     const [users] = await db.query(
-      'SELECT id, nombre, email, telefono, rol_id, verificado, createdAt FROM usuarios ORDER BY createdAt DESC'
+      'SELECT id, nombre, email, telefono, rol_id, verificado, bloqueado, createdAt FROM usuarios ORDER BY createdAt DESC'
     );
     res.json(users);
   } catch (error) {
@@ -170,3 +170,38 @@ exports.deleteRole = async (req, res) => {
     res.status(500).json({ message: 'Error al eliminar rol', error: error.message });
   }
 };
+
+// Bloquear/Desbloquear usuario (Solo Admin)
+exports.toggleBlockUser = async (req, res) => {
+  const { uid } = req.params;
+  const { bloqueado } = req.body;
+
+  try {
+    await db.query('UPDATE usuarios SET bloqueado = ? WHERE id = ?', [bloqueado ? 1 : 0, uid]);
+    res.json({ message: bloqueado ? 'Usuario bloqueado correctamente' : 'Usuario desbloqueado correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al cambiar estado de bloqueo', error: error.message });
+  }
+};
+
+// Borrar usuario (Solo Admin)
+exports.deleteUser = async (req, res) => {
+  const { uid } = req.params;
+
+  try {
+    // 1. Verificar si tiene incidencias
+    const [incidencias] = await db.query('SELECT COUNT(*) as count FROM incidencias WHERE usuario_id = ? OR usuarioTecnico_id = ?', [uid, uid]);
+    
+    if (incidencias[0].count > 0) {
+      return res.status(400).json({ 
+        message: 'No se puede eliminar el usuario porque tiene incidencias asociadas. Prueba a bloquearlo en su lugar.' 
+      });
+    }
+
+    await db.query('DELETE FROM usuarios WHERE id = ?', [uid]);
+    res.json({ message: 'Usuario eliminado con éxito' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar usuario', error: error.message });
+  }
+};
+

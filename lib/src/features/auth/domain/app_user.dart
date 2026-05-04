@@ -6,6 +6,7 @@ class AppUser {
   final String? nombre;
   final String? telefono;
   final int rolId;
+  final bool bloqueado;
 
   AppUser({
     required this.uid,
@@ -13,6 +14,7 @@ class AppUser {
     this.nombre,
     this.telefono,
     this.rolId = 1,
+    this.bloqueado = false,
   });
 
   UserRole get role {
@@ -30,6 +32,7 @@ class AppUser {
       nombre: json['nombre'],
       telefono: json['telefono'],
       rolId: json['rol_id'] ?? 1,
+      bloqueado: json['bloqueado'] == 1 || json['bloqueado'] == true,
     );
   }
 
@@ -40,6 +43,7 @@ class AppUser {
       'nombre': nombre,
       'telefono': telefono,
       'rol_id': rolId,
+      'bloqueado': bloqueado,
     };
   }
 }

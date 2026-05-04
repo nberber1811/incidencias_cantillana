@@ -9,6 +9,8 @@ router.use(isAdmin);
 
 router.get('/users', adminController.getAllUsers);
 router.put('/users/:uid/role', adminController.updateUserRole);
+router.put('/users/:uid/block', adminController.toggleBlockUser);
+router.delete('/users/:uid', adminController.deleteUser);
 router.get('/technicians', adminController.getTechnicians);
 router.put('/incidencias/:id/assign', adminController.assignTechnician);
 router.delete('/incidencias/finalizadas', adminController.deleteFinalIncidencias);

@@ -148,119 +148,124 @@ class _EditIncidenciaScreenState extends ConsumerState<EditIncidenciaScreen> {
       appBar: AppBar(title: const Text('Editar Incidencia')),
       body: Stack(
         children: [
-          ListView(
-            padding: const EdgeInsets.all(24),
-            children: [
-              const Text("Editar información", 
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-              
-              GestureDetector(
-                onTap: () => _showPickerOptions(context),
-                child: Container(
-                  height: 220,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  const Text("Editar información", 
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  
+                  GestureDetector(
+                    onTap: () => _showPickerOptions(context),
+                    child: Container(
+                      height: 220,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.blueAccent.withOpacity(0.2)),
+                      ),
+                      child: _newImage == null && widget.incidencia.image == null
+                          ? const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt_outlined, size: 60, color: Colors.blueAccent),
+                                SizedBox(height: 12),
+                                Text("Toca para añadir una foto", 
+                                     style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+                              ],
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: _newImage != null
+                                ? (kIsWeb 
+                                    ? Image.network(_newImage!.path, fit: BoxFit.cover)
+                                    : Image.file(File(_newImage!.path), fit: BoxFit.cover))
+                                : Image.network('$baseUploadUrl${widget.incidencia.image}', fit: BoxFit.cover),
+                            ),
+                    ),
                   ),
-                  child: _newImage == null && widget.incidencia.image == null
-                      ? const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt_outlined, size: 60, color: Colors.blueAccent),
-                            SizedBox(height: 12),
-                            Text("Toca para añadir una foto", 
-                                 style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
-                          ],
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: _newImage != null
-                            ? (kIsWeb 
-                                ? Image.network(_newImage!.path, fit: BoxFit.cover)
-                                : Image.file(File(_newImage!.path), fit: BoxFit.cover))
-                            : Image.network('$baseUploadUrl${widget.incidencia.image}', fit: BoxFit.cover),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              TextField(
-                controller: _tituloController,
-                decoration: const InputDecoration(
-                  labelText: 'Asunto o Título',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descripcionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción detallada',
-                ),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: ['Limpieza', 'Alumbrado', 'Vía Pública', 'Mobiliario', 'Otros'].contains(_categoria) ? _categoria : 'Otros',
-                decoration: const InputDecoration(labelText: 'Categoría'),
-                items: ['Limpieza', 'Alumbrado', 'Vía Pública', 'Mobiliario', 'Otros']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (val) => setState(() => _categoria = val!),
-              ),
-              const SizedBox(height: 24),
-              
-              const Divider(),
-              const SizedBox(height: 8),
-              const Text("Ubicación", 
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text("Usar GPS automático"),
-                value: _useGps,
-                onChanged: (val) {
-                  setState(() => _useGps = val);
-                  if (val && _currentPosition == null) {
-                    _determinePosition();
-                  }
-                },
-              ),
-              
-              if (_useGps)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    _currentPosition != null ? Icons.location_on : Icons.location_off,
-                    color: _currentPosition != null ? Colors.green : Colors.red,
+                  TextField(
+                    controller: _tituloController,
+                    decoration: const InputDecoration(
+                      labelText: 'Asunto o Título',
+                    ),
                   ),
-                  title: Text(_currentPosition != null 
-                      ? "Ubicación fijada" 
-                      : (_isLocating ? "Buscando ubicación..." : "No se pudo obtener la ubicación")),
-                  trailing: TextButton(
-                    onPressed: _determinePosition,
-                    child: const Text("Actualizar"),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descripcionController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción detallada',
+                    ),
                   ),
-                )
-              else
-                TextField(
-                  controller: _direccionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Dirección manual',
-                    prefixIcon: Icon(Icons.map_outlined),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: ['Limpieza', 'Alumbrado', 'Vía Pública', 'Mobiliario', 'Otros'].contains(_categoria) ? _categoria : 'Otros',
+                    decoration: const InputDecoration(labelText: 'Categoría'),
+                    items: ['Limpieza', 'Alumbrado', 'Vía Pública', 'Mobiliario', 'Otros']
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (val) => setState(() => _categoria = val!),
                   ),
-                ),
-              
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                onPressed: state.isLoading ? null : _submit,
-                icon: const Icon(Icons.save_rounded),
-                label: const Text("Guardar Cambios"),
-              )
-            ],
+                  const SizedBox(height: 24),
+                  
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  const Text("Ubicación", 
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text("Usar GPS automático"),
+                    value: _useGps,
+                    onChanged: (val) {
+                      setState(() => _useGps = val);
+                      if (val && _currentPosition == null) {
+                        _determinePosition();
+                      }
+                    },
+                  ),
+                  
+                  if (_useGps)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        _currentPosition != null ? Icons.location_on : Icons.location_off,
+                        color: _currentPosition != null ? Colors.green : Colors.red,
+                      ),
+                      title: Text(_currentPosition != null 
+                          ? "Ubicación fijada" 
+                          : (_isLocating ? "Buscando ubicación..." : "No se pudo obtener la ubicación")),
+                      trailing: TextButton(
+                        onPressed: _determinePosition,
+                        child: const Text("Actualizar"),
+                      ),
+                    )
+                  else
+                    TextField(
+                      controller: _direccionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Dirección manual',
+                        prefixIcon: Icon(Icons.map_outlined),
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: state.isLoading ? null : _submit,
+                    icon: const Icon(Icons.save_rounded),
+                    label: const Text("Guardar Cambios"),
+                  )
+                ],
+              ),
+            ),
           ),
           if (state.isLoading)
             const Center(child: CircularProgressIndicator()),

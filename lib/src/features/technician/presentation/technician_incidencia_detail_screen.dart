@@ -34,114 +34,119 @@ class _TechnicianIncidenciaDetailScreenState extends ConsumerState<TechnicianInc
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ejecución de Tarea')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.incidencia.image != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  '$baseUploadUrl${widget.incidencia.image}',
-                  width: double.infinity,
-                  height: 250,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            const SizedBox(height: 24),
-            
-            if (widget.incidencia.latitud != null && widget.incidencia.longitud != null)
-              Container(
-                height: 200,
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: HtmlMapWidget(
-                    lat: widget.incidencia.latitud!,
-                    lng: widget.incidencia.longitud!,
-                    incidencias: [widget.incidencia],
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.incidencia.image != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.network(
+                      '$baseUploadUrl${widget.incidencia.image}',
+                      width: double.infinity,
+                      height: 250,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-              )
-            else if (widget.incidencia.direccion != null && widget.incidencia.direccion!.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.location_on, color: Colors.redAccent),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        widget.incidencia.direccion!,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                const SizedBox(height: 24),
+                
+                if (widget.incidencia.latitud != null && widget.incidencia.longitud != null)
+                  Container(
+                    height: 200,
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: HtmlMapWidget(
+                        lat: widget.incidencia.latitud!,
+                        lng: widget.incidencia.longitud!,
+                        incidencias: [widget.incidencia],
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  )
+                else if (widget.incidencia.direccion != null && widget.incidencia.direccion!.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on, color: Colors.redAccent),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.incidencia.direccion!,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-            Text(
-              widget.incidencia.titulo,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                Text(
+                  widget.incidencia.titulo,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.incidencia.descripcion,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 32),
+                const Divider(),
+                const SizedBox(height: 24),
+                
+                Text(
+                  "Comentario Final (Opcional)",
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _comentarioController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Escribe aquí la respuesta para el ciudadano...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                Text(
+                  "Actualizar Estado",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                ref.watch(estadosProvider).when(
+                  data: (estados) => Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: estados.map((e) => _StatusButton(
+                      statusId: e.id,
+                      currentStatusId: widget.incidencia.estadoId,
+                      label: e.nombre,
+                      color: _getStatusColor(e.id),
+                      onPressed: () => _updateStatus(e.id),
+                    )).toList(),
+                  ),
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, st) => Text('Error al cargar estados: $e'),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              widget.incidencia.descripcion,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 24),
-            
-            Text(
-              "Comentario Final (Opcional)",
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _comentarioController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Escribe aquí la respuesta para el ciudadano...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.grey[50],
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            Text(
-              "Actualizar Estado",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ref.watch(estadosProvider).when(
-              data: (estados) => Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: estados.map((e) => _StatusButton(
-                  statusId: e.id,
-                  currentStatusId: widget.incidencia.estadoId,
-                  label: e.nombre,
-                  color: _getStatusColor(e.id),
-                  onPressed: () => _updateStatus(e.id),
-                )).toList(),
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, st) => Text('Error al cargar estados: $e'),
-            ),
-          ],
+          ),
         ),
       ),
     );

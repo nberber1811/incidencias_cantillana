@@ -168,4 +168,32 @@ class AdminRepository {
       throw Exception(detail);
     }
   }
+
+  // Bloquear/Desbloquear usuario
+  Future<void> toggleBlockUser(String uid, bool bloqueado) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/users/$uid/block'),
+      headers: await _headers(),
+      body: json.encode({'bloqueado': bloqueado}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Error al cambiar bloqueo: ${response.body}');
+    }
+  }
+
+  // Borrar usuario
+  Future<void> deleteUser(String uid) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/users/$uid'),
+      headers: await _headers(),
+    );
+    if (response.statusCode != 200) {
+      String detail = 'Error al eliminar usuario';
+      try {
+        final error = json.decode(response.body);
+        detail = error['message'] ?? detail;
+      } catch (e) {}
+      throw Exception(detail);
+    }
+  }
 }

@@ -66,6 +66,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
+    // Verificar si está bloqueado
+    if (userRow.bloqueado) {
+      return res.status(403).json({ message: 'Tu cuenta ha sido bloqueada. Contacta con el administrador.' });
+    }
+
     // Generar Token (incluyendo el rol numérico)
     if (!process.env.JWT_SECRET) {
       console.error('CRÍTICO: No se ha definido JWT_SECRET en las variables de entorno');

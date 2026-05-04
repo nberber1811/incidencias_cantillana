@@ -52,6 +52,7 @@ async function initializeDatabase() {
         telefono VARCHAR(20),
         rol_id INT DEFAULT 1,
         verificado BOOLEAN DEFAULT 0,
+        bloqueado BOOLEAN DEFAULT 0,
         token_verificacion VARCHAR(255),
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (rol_id) REFERENCES roles(id)
