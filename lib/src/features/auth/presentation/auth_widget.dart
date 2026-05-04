@@ -5,6 +5,7 @@ import 'package:ayuntamiento_incidencias/src/features/auth/domain/app_user.dart'
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/login_screen.dart';
 import 'package:ayuntamiento_incidencias/src/screens/home_screen.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

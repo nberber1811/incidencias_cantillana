@@ -93,8 +93,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(4),
                             ],
-                            validator: (value) =>
-                                (value == null || value.isEmpty) ? 'Error' : null,
+                            validator: (value) => null, // Opcional
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -102,7 +101,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           child: TextFormField(
                             controller: _telefonoController,
                             decoration: const InputDecoration(
-                              labelText: 'Teléfono',
+                              labelText: 'Teléfono (Opcional)',
                               hintText: '123456789',
                               prefixIcon: Icon(Icons.phone_outlined),
                             ),
@@ -112,7 +111,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               LengthLimitingTextInputFormatter(9),
                             ],
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Obligatorio';
+                              if (value == null || value.isEmpty) return null; // Permitir vacío
                               if (value.length != 9) return 'Debe tener 9 números';
                               return null;
                             },
@@ -181,7 +180,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ? null
                           : () {
                               if (_formKey.currentState!.validate()) {
-                                final fullPhone = '${_prefijoController.text}${_telefonoController.text}';
+                                final phone = _telefonoController.text.trim();
+                                final fullPhone = phone.isEmpty 
+                                    ? null 
+                                    : '${_prefijoController.text}$phone';
+                                
                                 ref
                                     .read(authControllerProvider.notifier)
                                     .signUp(

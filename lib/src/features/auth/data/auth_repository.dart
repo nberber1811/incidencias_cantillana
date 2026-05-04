@@ -139,4 +139,37 @@ class AuthRepository {
   Future<void> signOut() async {
     await clearPersistedUser();
   }
+
+  Future<String> forgotPassword(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    );
+
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return data['message'];
+    } else {
+      throw Exception(data['message'] ?? 'Error al procesar la solicitud');
+    }
+  }
+
+  Future<String> resetPassword(String token, String newPassword) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'token': token,
+        'newPassword': newPassword,
+      }),
+    );
+
+    final data = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return data['message'];
+    } else {
+      throw Exception(data['message'] ?? 'Error al actualizar la contraseña');
+    }
+  }
 }

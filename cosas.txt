@@ -1,2 +1,1 @@
-Email verificación - nodemailer
-Se me olvidó la contraseña -> botón para recuperarla al correo
+Arreglar editable de categorias

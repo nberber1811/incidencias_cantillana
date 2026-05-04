@@ -16,9 +16,9 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   final Ref _ref;
 
   // Creamos la instancia fuera para evitar reinicializaciones
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
+  static final _googleSignIn = GoogleSignIn(
     clientId: kIsWeb ? '519426341147-c4qjcm2dk41uoli6reldda6a1m7qj5l8.apps.googleusercontent.com' : null,
-    serverClientId: kIsWeb ? null : '519426341147-c4qjcm2dk41uoli6reldda6a1m7qj5l8.apps.googleusercontent.com',
+    serverClientId: !kIsWeb ? '519426341147-c4qjcm2dk41uoli6reldda6a1m7qj5l8.apps.googleusercontent.com' : null,
   );
 
   AuthController(this._authRepository, this._ref) : super(const AsyncData(null));
@@ -37,6 +37,8 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   Future<void> signInWithGoogle() async {
     state = const AsyncLoading();
     try {
+      // Forzar selector de cuenta cerrando sesión previa
+      await _googleSignIn.signOut();
       final googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) {
@@ -96,5 +98,29 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     state = const AsyncLoading();
     _ref.read(authStateProvider.notifier).state = null;
     state = await AsyncValue.guard(() => _authRepository.signOut());
+  }
+
+  Future<bool> forgotPassword(String email) async {
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(() => _authRepository.forgotPassword(email));
+    if (result.hasValue) {
+      state = const AsyncData(null);
+      return true;
+    } else {
+      state = AsyncError(result.error!, result.stackTrace!);
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String token, String newPassword) async {
+    state = const AsyncLoading();
+    final result = await AsyncValue.guard(() => _authRepository.resetPassword(token, newPassword));
+    if (result.hasValue) {
+      state = const AsyncData(null);
+      return true;
+    } else {
+      state = AsyncError(result.error!, result.stackTrace!);
+      return false;
+    }
   }
 }

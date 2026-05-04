@@ -1,5 +1,6 @@
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/register_screen.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,6 +97,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       obscureText: _obscurePassword,
                       validator: (value) =>
                           (value != null && value.length < 6) ? 'Mínimo 6 caracteres' : null,
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                          );
+                        },
+                        child: const Text('¿Has olvidado tu contraseña?'),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
