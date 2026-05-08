@@ -20,6 +20,8 @@ class Incidencia {
   final String? tecnicoNombre;
   final String? comentarioTecnico;
   final int? rolCreadorId;
+  final String? creadorNombre;
+  final String? creadorEmail;
 
   Incidencia({
     required this.id,
@@ -40,6 +42,8 @@ class Incidencia {
     this.tecnicoNombre,
     this.comentarioTecnico,
     this.rolCreadorId,
+    this.creadorNombre,
+    this.creadorEmail,
   });
 
   factory Incidencia.fromJson(Map<String, dynamic> json) {
@@ -60,6 +64,8 @@ class Incidencia {
       tecnicoNombre: json['tecnicoNombre'],
       comentarioTecnico: json['comentario_tecnico'],
       rolCreadorId: json['rolCreadorId'],
+      creadorNombre: json['creadorNombre'],
+      creadorEmail: json['creadorEmail'],
       fechaCreacion: json['fecha_creacion'] != null 
           ? DateTime.parse(json['fecha_creacion'] as String)
           : DateTime.now(),

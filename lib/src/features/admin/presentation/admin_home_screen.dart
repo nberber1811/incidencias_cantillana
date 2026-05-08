@@ -5,6 +5,7 @@ import 'package:ayuntamiento_incidencias/src/features/admin/presentation/admin_c
 import 'package:ayuntamiento_incidencias/src/features/admin/presentation/admin_incidencia_detail_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/admin/presentation/user_management_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/admin/presentation/system_settings_screen.dart';
+import 'package:ayuntamiento_incidencias/src/features/admin/presentation/history_screen.dart';
 import 'package:ayuntamiento_incidencias/src/features/auth/presentation/auth_controller.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/data/incidencia_repository.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/map_view_screen.dart';
@@ -38,6 +39,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
             onDateRangeChanged: (range) => setState(() => _dateRange = range),
           ),
           UserManagementScreen(),
+          HistoryScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -53,6 +55,11 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
             label: 'Usuarios',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Historial',
           ),
         ],
       ),

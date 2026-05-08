@@ -2,13 +2,18 @@ import 'package:ayuntamiento_incidencias/src/features/incidencias/domain/inciden
 import 'package:flutter/material.dart';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/presentation/widgets/html_map_widget.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/data/auth_repository.dart';
+import 'package:ayuntamiento_incidencias/src/features/auth/domain/app_user.dart';
 
-class IncidenciaDetailScreen extends StatelessWidget {
+class IncidenciaDetailScreen extends ConsumerWidget {
   final Incidencia incidencia;
   const IncidenciaDetailScreen({super.key, required this.incidencia});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentUser = ref.watch(authStateProvider);
+    final isAuthorized = currentUser?.role == UserRole.tecnico || currentUser?.role == UserRole.administrador;
     const String baseUploadUrl = 'https://alumno23.fpcantillana.org/uploads/';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -149,6 +154,66 @@ class IncidenciaDetailScreen extends StatelessWidget {
                                 fontSize: 16,
                                 height: 1.5,
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
+                    if (isAuthorized && (incidencia.creadorNombre != null || incidencia.creadorEmail != null)) ...[
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark ? Colors.white.withOpacity(0.1) : Colors.grey[200]!,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Datos del Ciudadano",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(Icons.person_outline, size: 20, color: isDark ? Colors.white70 : Colors.black54),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    incidencia.creadorNombre ?? "Nombre no disponible",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.email_outlined, size: 20, color: isDark ? Colors.white70 : Colors.black54),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    incidencia.creadorEmail ?? "Email no disponible",
+                                    style: TextStyle(
+                                      color: isDark ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

@@ -10,6 +10,8 @@ exports.getAllIncidencias = async (req, res) => {
              c.nombre as categoriaNombre, 
              e.nombre as estadoNombre,
              u.nombre as tecnicoNombre,
+             creador.nombre as creadorNombre,
+             creador.email as creadorEmail,
              creador.rol_id as rolCreadorId
       FROM incidencias i
       LEFT JOIN categorias c ON i.categoria_id = c.id
@@ -33,10 +35,13 @@ exports.getIncidenciasByUser = async (req, res) => {
       SELECT i.*, 
              DATE_FORMAT(i.fecha_creacion, '%Y-%m-%dT%H:%i:%sZ') as fecha_creacion,
              c.nombre as categoriaNombre, 
-             e.nombre as estadoNombre 
+             e.nombre as estadoNombre,
+             creador.nombre as creadorNombre,
+             creador.email as creadorEmail
       FROM incidencias i
       LEFT JOIN categorias c ON i.categoria_id = c.id
       LEFT JOIN estados e ON i.estado_id = e.id
+      LEFT JOIN usuarios creador ON i.usuario_id = creador.id
       WHERE i.usuario_id = ?
       ORDER BY i.fecha_creacion DESC
     `;
@@ -54,10 +59,13 @@ exports.getIncidenciasByTechnician = async (req, res) => {
       SELECT i.*, 
              DATE_FORMAT(i.fecha_creacion, '%Y-%m-%dT%H:%i:%sZ') as fecha_creacion,
              c.nombre as categoriaNombre, 
-             e.nombre as estadoNombre 
+             e.nombre as estadoNombre,
+             creador.nombre as creadorNombre,
+             creador.email as creadorEmail
       FROM incidencias i
       LEFT JOIN categorias c ON i.categoria_id = c.id
       LEFT JOIN estados e ON i.estado_id = e.id
+      LEFT JOIN usuarios creador ON i.usuario_id = creador.id
       WHERE i.usuarioTecnico_id = ?
       ORDER BY i.fecha_creacion DESC
     `;
@@ -219,5 +227,29 @@ exports.getEstados = async (req, res) => {
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener estados', error: error.message });
+  }
+};
+
+exports.getHistorial = async (req, res) => {
+  try {
+    const query = `
+      SELECT h.*, 
+             DATE_FORMAT(h.fecha_cambio, '%Y-%m-%dT%H:%i:%sZ') as fecha_cambio,
+             e1.nombre as estadoAnteriorNombre, 
+             e2.nombre as estadoNuevoNombre,
+             u.nombre as usuarioNombre,
+             i.titulo as incidenciaTitulo
+      FROM historial_estados h
+      LEFT JOIN estados e1 ON h.estado_anterior = e1.id
+      LEFT JOIN estados e2 ON h.estado_nuevo = e2.id
+      LEFT JOIN usuarios u ON h.usuario_id = u.id
+      LEFT JOIN incidencias i ON h.incidencia_id = i.id
+      ORDER BY h.fecha_cambio DESC
+    `;
+    const [rows] = await db.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error getHistorial:', error);
+    res.status(500).json({ message: 'Error al obtener el historial', error: error.message });
   }
 };

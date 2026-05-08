@@ -19,6 +19,7 @@ const upload = multer({ storage: storage });
 router.get('/', controller.getAllIncidencias);
 router.get('/categorias', controller.getCategorias);
 router.get('/estados', controller.getEstados);
+router.get('/historial', controller.getHistorial);
 router.get('/user/:userId', controller.getIncidenciasByUser);
 router.get('/technician/:tecnicoId', controller.getIncidenciasByTechnician);
 router.post('/upload', upload.single('image'), controller.uploadOnly);

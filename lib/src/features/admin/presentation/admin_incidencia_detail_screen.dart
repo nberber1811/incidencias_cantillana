@@ -126,7 +126,58 @@ class _AdminIncidenciaDetailScreenState extends ConsumerState<AdminIncidenciaDet
               widget.incidencia.descripcion,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            // BLOQUE DE DATOS DEL CIUDADANO (Creador)
+            if (widget.incidencia.creadorNombre != null || widget.incidencia.creadorEmail != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "DATOS DEL CIUDADANO (CREADOR)",
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_pin_outlined, size: 20, color: Colors.blueGrey),
+                        const SizedBox(width: 12),
+                        Text(
+                          widget.incidencia.creadorNombre ?? "No disponible",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.alternate_email_outlined, size: 20, color: Colors.blueGrey),
+                        const SizedBox(width: 12),
+                        Text(
+                          widget.incidencia.creadorEmail ?? "No disponible",
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+            
             const Divider(),
             const SizedBox(height: 24),
             

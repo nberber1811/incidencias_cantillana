@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:ayuntamiento_incidencias/src/features/incidencias/domain/incidencia.dart';
+import 'package:ayuntamiento_incidencias/src/features/incidencias/domain/historial_item.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +21,10 @@ final technicianIncidenciasStreamProvider = StreamProvider.family<List<Incidenci
 
 final allIncidenciasStreamProvider = StreamProvider<List<Incidencia>>((ref) {
   return ref.watch(incidenciaRepositoryProvider).watchAllIncidencias();
+});
+
+final historialStreamProvider = StreamProvider<List<HistorialItem>>((ref) {
+  return ref.watch(incidenciaRepositoryProvider).watchHistorial();
 });
 
 // Proveedores globales de categorías y estados
@@ -105,6 +110,23 @@ class IncidenciaRepository {
         yield [];
       }
       await Future.delayed(const Duration(seconds: 10));
+    }
+  }
+
+  Stream<List<HistorialItem>> watchHistorial() async* {
+    while (true) {
+      try {
+        final response = await http.get(Uri.parse('$baseUrl/historial'));
+        if (response.statusCode == 200) {
+          final List<dynamic> data = json.decode(response.body);
+          yield data.map((item) => HistorialItem.fromJson(item)).toList();
+        } else {
+          yield [];
+        }
+      } catch (e) {
+        yield [];
+      }
+      await Future.delayed(const Duration(seconds: 15));
     }
   }
 
